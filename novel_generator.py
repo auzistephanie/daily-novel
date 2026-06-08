@@ -232,6 +232,7 @@ def generate_and_send_one(genre_name=None):
     send_telegram(f"✨ 加推生成中：{genre['name']} ·  {character['name']}，請稍候...")
 
     content, villain, opening = generate_story(genre, character)
+    print(f"[generate_and_send_one] 故事生成完成，字數={len(content)}")
     header = (
         f"📖 [加推]  {genre['name']}\n"
         f"👤 {character['name']} · {character['gender']} · {character['occupation']}\n"
@@ -245,6 +246,8 @@ def generate_and_send_one(genre_name=None):
             {"text": "🤩 超好", "callback_data": f"ratex_4_{genre['name']}"},
         ]]
     }
+    print(f"[generate_and_send_one] 準備發送，total_len={len(header + content)}")
     send_telegram(header + content, reply_markup=rating_keyboard)
+    print("[generate_and_send_one] send_telegram 完成")
 
 
