@@ -66,6 +66,7 @@ def send_telegram(text: str, reply_markup=None, max_retries: int = 3) -> None:
             try:
                 resp = requests.post(url, json=payload, timeout=15)
                 if resp.ok:
+                    print(f"Telegram 發送成功 chunk {idx+1}/{len(chunks)}")
                     break
                 print(f"Telegram 發送失敗（第 {attempt} 次）: {resp.status_code} {resp.text}")
             except requests.RequestException as e:
