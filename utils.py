@@ -4,6 +4,7 @@ import os
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
+import certifi
 from pymongo import MongoClient
 
 BASE_DIR = Path(__file__).parent
@@ -14,7 +15,7 @@ _mongo_client = None
 def _get_collection():
     global _mongo_client
     if _mongo_client is None:
-        _mongo_client = MongoClient(os.getenv("MONGODB_URI"))
+        _mongo_client = MongoClient(os.getenv("MONGODB_URI"), tlsCAFile=certifi.where())
     return _mongo_client["novel"]["genre_data"]
 
 
