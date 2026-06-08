@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
 app = Flask(__name__)
 log = logging.getLogger(__name__)
 

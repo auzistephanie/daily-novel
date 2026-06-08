@@ -17,8 +17,6 @@ if str(BASE_DIR) not in sys.path:
 
 load_dotenv(BASE_DIR / ".env")
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 STORIES_DIR = BASE_DIR / "stories"
 
 RATING_LABELS = {1: "😞 差", 2: "😐 一般", 3: "😊 好", 4: "🤩 超好"}
@@ -46,8 +44,9 @@ from utils import (
 # ── 基礎工具 ──────────────────────────────────────────────────────
 
 def answer_callback(callback_query_id, text=""):
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
     requests.post(
-        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery",
+        f"https://api.telegram.org/bot{token}/answerCallbackQuery",
         json={"callback_query_id": callback_query_id, "text": text, "show_alert": False},
         timeout=10,
     )
@@ -55,6 +54,7 @@ def answer_callback(callback_query_id, text=""):
 
 def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
         {"command": "now",     "description": "即時生成1篇新故事"},
         {"command": "list",    "description": "瀏覽所有類別，tap 即生成"},
@@ -65,7 +65,7 @@ def register_commands():
         {"command": "help",    "description": "指令說明"},
     ]
     requests.post(
-        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/setMyCommands",
+        f"https://api.telegram.org/bot{token}/setMyCommands",
         json={"commands": commands},
         timeout=10,
     )
@@ -109,6 +109,8 @@ def handle_history():
 
 
 def send_story(story_num, stories):
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
     s = stories[story_num - 1]
     header = (
         f"📖 [{story_num}/{len(stories)}]  {s['genre']}\n"
@@ -116,11 +118,11 @@ def send_story(story_num, stories):
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
     )
     full_text = header + s["content"]
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     max_len = 4000
     chunks = [full_text[i:i + max_len] for i in range(0, len(full_text), max_len)]
     for idx, chunk in enumerate(chunks):
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": chunk}
+        payload = {"chat_id": chat_id, "text": chunk}
         if idx == len(chunks) - 1:
             payload["reply_markup"] = {"inline_keyboard": [[
                 {"text": "😞 差",   "callback_data": f"rate_{story_num}_1"},
@@ -363,7 +365,7 @@ def poll():
     register_commands()
     log.info(f"Bot listener 啟動 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
+    url = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/getUpdates"
     offset = None
 
     while True:

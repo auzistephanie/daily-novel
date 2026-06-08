@@ -9,8 +9,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).parent
 load_dotenv(BASE_DIR / ".env")
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 GENRE_DATA_FILE = BASE_DIR / "genre_data.json"
 
 
@@ -53,10 +51,15 @@ def _split_text(text: str, max_len: int = 4000) -> list:
 
 def send_telegram(text: str, reply_markup=None, max_retries: int = 3) -> None:
     """發送訊息，在段落邊界分割超長文字，失敗最多重試 max_retries 次。"""
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print(f"Telegram 設定缺失: token={'SET' if token else 'MISSING'}, chat_id={'SET' if chat_id else 'MISSING'}")
+        return
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     chunks = _split_text(text)
     for idx, chunk in enumerate(chunks):
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": chunk}
+        payload = {"chat_id": chat_id, "text": chunk}
         if reply_markup and idx == len(chunks) - 1:
             payload["reply_markup"] = reply_markup
         for attempt in range(1, max_retries + 1):
@@ -64,7 +67,7 @@ def send_telegram(text: str, reply_markup=None, max_retries: int = 3) -> None:
                 resp = requests.post(url, json=payload, timeout=15)
                 if resp.ok:
                     break
-                print(f"Telegram 發送失敗（第 {attempt} 次）: {resp.text}")
+                print(f"Telegram 發送失敗（第 {attempt} 次）: {resp.status_code} {resp.text}")
             except requests.RequestException as e:
                 print(f"Telegram 請求異常（第 {attempt} 次）: {e}")
 

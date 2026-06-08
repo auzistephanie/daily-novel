@@ -1,26 +1,18 @@
 import random
-import json
-import requests
 import os
 from openai import OpenAI
-from datetime import datetime
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).parent
 load_dotenv(BASE_DIR / ".env")
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-STORIES_DIR = BASE_DIR / "stories"
 
 from utils import (
     load_genre_data, save_genre_data,
     send_telegram, send_toc_menu,
-    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
 )
-
-NUM_STORIES = 3  # 每次生成篇數，改呢度就夠
 
 # ── 類別清單，想加就喺呢度加 ──────────────────────────────────────
 GENRES = [
@@ -122,74 +114,6 @@ OPENING_HOOKS = [
     "主角接到一通電話，對方的態度在三分鐘內從趾高氣揚到語氣顫抖",
 ]
 
-RATING_LABELS = {1: "😞 差", 2: "😐 一般", 3: "😊 好", 4: "🤩 超好"}
-
-
-# ── 類別記憶與加權選取 ────────────────────────────────────────────
-
-def select_genres():
-    data = load_genre_data()
-    recent = data.get("recent_genres", [])
-    ratings = data.get("ratings", {})
-    session_size = NUM_STORIES
-
-    weights = []
-    for g in GENRES:
-        name = g["name"]
-        w = 1.0
-
-        # 近期使用懲罰（越近越低）
-        last_session = recent[-(session_size):]
-        prev_session = recent[-(session_size * 2):-(session_size)]
-        older = recent[:-(session_size * 2)] if len(recent) > session_size * 2 else []
-
-        if name in last_session:
-            w *= 0.05
-        elif name in prev_session:
-            w *= 0.25
-        elif name in older:
-            w *= 0.65
-
-        # 評分懲罰
-        genre_ratings = ratings.get(name, [])
-        if len(genre_ratings) >= 2:
-            avg = sum(genre_ratings) / len(genre_ratings)
-            if avg < 2:
-                w *= 0.15
-            elif avg < 2.8:
-                w *= 0.55
-            elif avg >= 3.8:
-                w *= 1.3  # 高分加分
-
-        weights.append(max(w, 0.01))
-
-    # 加權無重複抽樣
-    available = list(GENRES)
-    avail_weights = list(weights)
-    selected = []
-    for _ in range(NUM_STORIES):
-        total = sum(avail_weights)
-        r = random.uniform(0, total)
-        cumulative = 0
-        for i, (genre, wt) in enumerate(zip(available, avail_weights)):
-            cumulative += wt
-            if r <= cumulative:
-                selected.append(genre)
-                available.pop(i)
-                avail_weights.pop(i)
-                break
-
-    return selected
-
-
-def update_genre_history(selected_genre_names):
-    data = load_genre_data()
-    recent = data.get("recent_genres", [])
-    recent.extend(selected_genre_names)
-    data["recent_genres"] = recent[-(NUM_STORIES * 6):]  # 保留最近 6 次
-    save_genre_data(data)
-
-
 # ── 主角生成 ──────────────────────────────────────────────────────
 
 def generate_character():
@@ -211,15 +135,6 @@ def generate_character():
 def load_winners():
     data = load_genre_data()
     return data.get("winners", {})
-
-
-def save_winner(genre_name, opening, villain):
-    data = load_genre_data()
-    winners = data.setdefault("winners", {})
-    entries = winners.setdefault(genre_name, [])
-    entries.append({"opening": opening, "villain": villain})
-    winners[genre_name] = entries[-5:]  # 保留最近5次高分設定
-    save_genre_data(data)
 
 
 def generate_story(genre, character, max_retries: int = 3):
@@ -342,123 +257,3 @@ def generate_and_send_one(genre_name=None):
     send_telegram(header + content, reply_markup=rating_keyboard)
 
 
-# ── Telegram 快捷鍵盤 ─────────────────────────────────────────────
-
-def send_reply_keyboard(num_stories: int = NUM_STORIES):
-    buttons = [{"text": f"📖 故事{i}"} for i in range(1, num_stories + 1)]
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    for attempt in range(1, 4):
-        try:
-            resp = requests.post(url, json={
-                "chat_id": TELEGRAM_CHAT_ID,
-                "text": "👇 快捷鍵盤，隨時一tap重讀",
-                "reply_markup": {
-                    "keyboard": [buttons],
-                    "resize_keyboard": True,
-                    "persistent": True,
-                }
-            }, timeout=15)
-            if resp.ok:
-                break
-            print(f"send_reply_keyboard 失敗（第 {attempt} 次）: {resp.text}")
-        except requests.RequestException as e:
-            print(f"send_reply_keyboard 異常（第 {attempt} 次）: {e}")
-
-
-def save_stories(stories_data):
-    STORIES_DIR.mkdir(exist_ok=True)
-    today = datetime.now().strftime("%Y-%m-%d")
-    with open(STORIES_DIR / f"{today}.json", "w", encoding="utf-8") as f:
-        json.dump(stories_data, f, ensure_ascii=False, indent=2)
-
-
-def cleanup_old_stories(keep_days: int = 30):
-    """刪除超過 keep_days 日的故事存檔。"""
-    from datetime import timedelta
-    cutoff = datetime.now() - timedelta(days=keep_days)
-    deleted = 0
-    for f in STORIES_DIR.glob("*.json"):
-        try:
-            file_date = datetime.strptime(f.stem, "%Y-%m-%d")
-            if file_date < cutoff:
-                f.unlink()
-                deleted += 1
-        except ValueError:
-            pass
-    if deleted:
-        print(f"清理舊故事：已刪除 {deleted} 個存檔", flush=True)
-
-
-# ── 主流程 ────────────────────────────────────────────────────────
-
-def _generate_one(args):
-    """ThreadPoolExecutor worker：生成單篇，回傳 (index, story_dict)。"""
-    i, genre, character = args
-    print(f"[{i}/{NUM_STORIES}] 生成：{genre['name']} | {character['name']}（{character['gender']}）...", flush=True)
-    content, villain, opening = generate_story(genre, character)
-    print(f"[{i}/{NUM_STORIES}] 完成 ✓", flush=True)
-    return i, {
-        "genre": genre["name"],
-        "character": character,
-        "content": content,
-        "villain": villain,
-        "opening": opening,
-    }
-
-
-def main():
-    today = datetime.now().strftime("%Y年%m月%d日")
-    send_telegram(f"📚 {today} 每日小說\n今日精選 {NUM_STORIES} 篇，生成中，請稍候...")
-
-    selected_genres = select_genres()
-    characters = [generate_character() for _ in selected_genres]
-
-    # 平行生成所有故事
-    tasks = [(i + 1, genre, char) for i, (genre, char) in enumerate(zip(selected_genres, characters))]
-    stories_data = [None] * NUM_STORIES
-
-    with ThreadPoolExecutor(max_workers=NUM_STORIES) as executor:
-        futures = {executor.submit(_generate_one, t): t for t in tasks}
-        for future in as_completed(futures):
-            try:
-                idx, story = future.result()
-                stories_data[idx - 1] = story
-            except Exception as e:
-                t = futures[future]
-                print(f"[{t[0]}/{NUM_STORIES}] 生成失敗：{e}", flush=True)
-                send_telegram(f"⚠️ 第 {t[0]} 篇《{t[1]['name']}》生成失敗：{e}")
-
-    # 過濾失敗項，按順序發送
-    # 注意：valid_stories 重新 enumerate，rating callback 對應新 index
-    valid_stories = [s for s in stories_data if s is not None]
-    if not valid_stories:
-        send_telegram("⚠️ 今日所有故事均生成失敗，請稍後重試。")
-        return
-
-    for i, story in enumerate(valid_stories, 1):
-        header = (
-            f"📖 [{i}/{len(valid_stories)}]  {story['genre']}\n"
-            f"👤 {story['character']['name']} · {story['character']['gender']} · {story['character']['occupation']}\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        )
-        # callback 用新 index（i），評分會正確對應 valid_stories[i-1]
-        rating_keyboard = {
-            "inline_keyboard": [[
-                {"text": "😞 差",   "callback_data": f"rate_{i}_1"},
-                {"text": "😐 一般", "callback_data": f"rate_{i}_2"},
-                {"text": "😊 好",   "callback_data": f"rate_{i}_3"},
-                {"text": "🤩 超好", "callback_data": f"rate_{i}_4"},
-            ]]
-        }
-        send_telegram(header + story["content"], reply_markup=rating_keyboard)
-
-    save_stories(valid_stories)
-    update_genre_history([s["genre"] for s in valid_stories])
-    send_toc_menu(valid_stories)
-    send_reply_keyboard(len(valid_stories))
-    cleanup_old_stories()
-    print("完成 ✓")
-
-
-if __name__ == "__main__":
-    main()
