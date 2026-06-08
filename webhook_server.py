@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 from bot_listener import handle_message, handle_callback, register_commands
 
 
-@app.route(f"/webhook/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json(silent=True)
     if not data:
