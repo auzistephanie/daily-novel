@@ -1,29 +1,37 @@
 """共用工具函數：genre data I/O、Telegram 發送、目錄選單。"""
 
-import json
 import os
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
+from pymongo import MongoClient
 
 BASE_DIR = Path(__file__).parent
 load_dotenv(BASE_DIR / ".env")
 
-GENRE_DATA_FILE = BASE_DIR / "genre_data.json"
+_mongo_client = None
+
+def _get_collection():
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = MongoClient(os.getenv("MONGODB_URI"))
+    return _mongo_client["novel"]["genre_data"]
 
 
 # ── Genre Data ────────────────────────────────────────────────────
 
 def load_genre_data() -> dict:
-    if GENRE_DATA_FILE.exists():
-        with open(GENRE_DATA_FILE, encoding="utf-8") as f:
-            return json.load(f)
+    col = _get_collection()
+    doc = col.find_one({"_id": "main"})
+    if doc:
+        doc.pop("_id", None)
+        return doc
     return {"recent_genres": [], "ratings": {}}
 
 
 def save_genre_data(data: dict) -> None:
-    with open(GENRE_DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    col = _get_collection()
+    col.replace_one({"_id": "main"}, {"_id": "main", **data}, upsert=True)
 
 
 # ── Telegram ──────────────────────────────────────────────────────
