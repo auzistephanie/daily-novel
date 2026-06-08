@@ -4,35 +4,43 @@ import os
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
-import certifi
-from pymongo import MongoClient
+import json as _json
 
 BASE_DIR = Path(__file__).parent
 load_dotenv(BASE_DIR / ".env")
 
-_mongo_client = None
+_REDIS_KEY = "genre_data"
 
-def _get_collection():
-    global _mongo_client
-    if _mongo_client is None:
-        _mongo_client = MongoClient(os.getenv("MONGODB_URI"), tlsCAFile=certifi.where())
-    return _mongo_client["novel"]["genre_data"]
+
+def _redis_url():
+    return os.getenv("UPSTASH_REDIS_REST_URL", "").rstrip("/")
+
+def _redis_headers():
+    return {"Authorization": f"Bearer {os.getenv('UPSTASH_REDIS_REST_TOKEN')}"}
 
 
 # ── Genre Data ────────────────────────────────────────────────────
 
 def load_genre_data() -> dict:
-    col = _get_collection()
-    doc = col.find_one({"_id": "main"})
-    if doc:
-        doc.pop("_id", None)
-        return doc
-    return {"recent_genres": [], "ratings": {}}
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["GET", _REDIS_KEY],
+        timeout=10,
+    )
+    value = resp.json().get("result")
+    if not value:
+        return {"recent_genres": [], "ratings": {}}
+    return _json.loads(value)
 
 
 def save_genre_data(data: dict) -> None:
-    col = _get_collection()
-    col.replace_one({"_id": "main"}, {"_id": "main", **data}, upsert=True)
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SET", _REDIS_KEY, _json.dumps(data, ensure_ascii=False)],
+        timeout=10,
+    )
 
 
 # ── Telegram ──────────────────────────────────────────────────────
