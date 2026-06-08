@@ -181,8 +181,9 @@ def generate_story(genre, character, max_retries: int = 3):
 ・開場立刻入題，不要鋪墊超過200字
 ・故事必須完整，主角大獲全勝後才結束
 ・嚴禁：長篇心理獨白、突然斷尾、反派莫名變好人
+・結尾寧可簡單直接，也不要複雜模糊——主角贏了，反派輸了，一句話收尾，完整清晰
 
-字數：3500至5000字 ｜ 繁體中文 ｜ 直接從標題開始
+字數：2000至2500字 ｜ 繁體中文 ｜ 直接從標題開始
 
 開始："""
 
@@ -192,8 +193,8 @@ def generate_story(genre, character, max_retries: int = 3):
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[{"role": "user", "content": prompt}],
-                temperature=1.3,
-                max_tokens=8000,
+                temperature=1.1,
+                max_tokens=5000,
             )
             return response.choices[0].message.content, villain, opening
         except Exception as e:
