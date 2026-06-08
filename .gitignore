@@ -1,0 +1,17 @@
+# 敏感設定
+.env
+
+# 生成故事存檔（體積大，唔需要版本控制）
+stories/
+
+# 評分與類別記憶（本地狀態，唔 commit）
+genre_data.json
+
+# 日誌
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.DS_Store
