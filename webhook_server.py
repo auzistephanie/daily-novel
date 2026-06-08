@@ -47,6 +47,19 @@ def index():
     return "Bot is running!"
 
 
+@app.route("/debug", methods=["GET"])
+def debug():
+    import requests as req
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "NOT SET")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID", "NOT SET")
+    r = req.get(f"https://api.telegram.org/bot{token}/getMe", timeout=5)
+    return jsonify({
+        "token_last10": token[-10:] if len(token) > 10 else token,
+        "chat_id": chat_id,
+        "getMe": r.json()
+    })
+
+
 if __name__ == "__main__":
     register_commands()
     port = int(os.getenv("PORT", 8000))
