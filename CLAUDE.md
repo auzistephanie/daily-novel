@@ -1,13 +1,14 @@
 # CLAUDE.md — 每日小說生成器
 
-每隔一日早上 9am 自動生成中文網絡爽文，推送 Telegram。DeepSeek-V3 生成，支援評分回饋、加權選類、按需即時生成。
+按需生成中文網絡爽文（自己選擇時間先生成，唔再自動排程），推送 Telegram。DeepSeek-V3 生成，支援評分回饋、加權選類、即時生成。
 
 ## 核心檔案
 - `novel_generator.py` — 主腳本：類別池、主角生成、故事生成、加推
 - `bot_listener.py` — Telegram 後台服務（按鈕 / 指令互動）
 - `utils.py` — genre data I/O、Telegram 發送
 - `genre_data.json` — 評分與 winners 記憶（本地，唔 commit）
-- `.env` — API keys（唔 commit）
+- `.env` — API keys（含 GITHUB_TOKEN，唔 commit）
+- `github_push.py` — 用 GitHub API push（PAT in .env），完成重大更新後自動執行：`python3 github_push.py "<commit message>"`
 
 ## 類別系統（2026-06 改版）
 
@@ -32,8 +33,9 @@
 `/now` 即時生成 · `/list` 瀏覽類別 · `/more` 高分加推 · `/stats` 評分統計 · `/menu` 今日目錄 · `/history` 近 7 日 · `/help`
 
 ## 自動化
-- Cron：`0 9 */2 * * python3 novel_generator.py >> cron.log 2>&1`
+- 已取消自動 cron 生成，改為按需執行 `python3 novel_generator.py` 或 Telegram `/now`
 - LaunchAgent：`com.stephanieau.novel-bot.plist`（Bot 常駐，crash 自動重啟）
 
 ## 改版歷史
+- **2026-06-11**：取消每隔一日 9am 自動生成 cron，改為自己選擇時間按需生成
 - **2026-06-11**：刪 6 個男頻冷門類別（醫術流／古言權謀／鑑寶奇才／神豪撒幣／末世崛起／競技熱血）；新增 10 個女頻言情爆款 + channel/weight 加權系統；加爆款標題公式；男女頻分開 prompt 模板。

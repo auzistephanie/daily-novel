@@ -30,7 +30,7 @@ def main():
 
     changes = []
     for line in status.stdout.strip().split("\n"):
-        x, y, path = line[0], line[1], line[3:]
+        x, y, path = line[0], line[1], line[2:].strip()
         path = path.split(" -> ")[-1]
         st = (x + y).strip()
         if st == "??" or "A" in st or "M" in st:
