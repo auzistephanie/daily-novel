@@ -43,6 +43,57 @@ def save_genre_data(data: dict) -> None:
     )
 
 
+# ── DNA 防重複記錄 ────────────────────────────────────────────────
+
+def load_recent_dna() -> dict:
+    """讀取最近用過的 DNA 元素記錄（每個維度最多存 15 個）。"""
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["GET", "recent_dna"],
+        timeout=10,
+    )
+    value = resp.json().get("result")
+    if not value:
+        return {}
+    return _json.loads(value)
+
+
+def save_recent_dna(data: dict) -> None:
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SET", "recent_dna", _json.dumps(data, ensure_ascii=False)],
+        timeout=10,
+    )
+
+
+def save_story_dna(genre_name: str, dna: dict) -> None:
+    """暫存某 genre 最近一篇故事的 DNA，供評分時查詢（TTL 7 日）。"""
+    key = f"story_dna:{genre_name}"
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SET", key, _json.dumps(dna, ensure_ascii=False), "EX", 604800],
+        timeout=10,
+    )
+
+
+def load_story_dna(genre_name: str) -> dict:
+    """讀取指定 genre 最近一篇故事的 DNA。"""
+    key = f"story_dna:{genre_name}"
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["GET", key],
+        timeout=10,
+    )
+    value = resp.json().get("result")
+    if not value:
+        return {}
+    return _json.loads(value)
+
+
 # ── Telegram ──────────────────────────────────────────────────────
 
 def _split_text(text: str, max_len: int = 4000) -> list:

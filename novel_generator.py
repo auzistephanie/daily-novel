@@ -338,16 +338,47 @@ NARRATIVE_STRUCTURES = [
 
 
 def _pick_unique_elements():
-    """每次生成時隨機抽取一組故事 DNA，令每篇有獨特骨架。"""
-    return {
-        "setting":        random.choice(STORY_SETTINGS),
-        "irony":          random.choice(IRONY_STRUCTURES),
-        "trump_card":     random.choice(TRUMP_CARDS),
-        "villain_flaw":   random.choice(VILLAIN_FLAWS),
-        "emotional_core": random.choice(EMOTIONAL_CORES),
-        "memorable":      random.choice(MEMORABLE_DETAILS),
-        "structure":      random.choice(NARRATIVE_STRUCTURES),
+    """每次生成時隨機抽取一組故事 DNA，自動避開最近用過的元素（防重複）。"""
+    from utils import load_recent_dna, save_recent_dna
+
+    try:
+        recent = load_recent_dna()
+    except Exception:
+        recent = {}
+
+    WINDOW = 5  # 每個維度記住最近 5 個，避免短期重複
+
+    def pick_fresh(pool, key):
+        used = set(recent.get(key, []))
+        fresh = [x for x in pool if x not in used]
+        if not fresh:        # 全部用過就重置
+            fresh = pool
+        return random.choice(fresh)
+
+    unique = {
+        "setting":        pick_fresh(STORY_SETTINGS,       "setting"),
+        "irony":          pick_fresh(IRONY_STRUCTURES,     "irony"),
+        "trump_card":     pick_fresh(TRUMP_CARDS,          "trump_card"),
+        "villain_flaw":   pick_fresh(VILLAIN_FLAWS,        "villain_flaw"),
+        "emotional_core": pick_fresh(EMOTIONAL_CORES,      "emotional_core"),
+        "memorable":      pick_fresh(MEMORABLE_DETAILS,    "memorable"),
+        "structure":      pick_fresh(NARRATIVE_STRUCTURES, "structure"),
     }
+
+    # 更新 recent 記錄（sliding window）
+    for key, val in unique.items():
+        lst = recent.get(key, [])
+        if val in lst:
+            lst.remove(val)
+        lst.append(val)
+        recent[key] = lst[-WINDOW:]
+
+    try:
+        save_recent_dna(recent)
+    except Exception:
+        pass
+
+    return unique
 
 # ── 爆款標題公式（男女頻共用）──────────────────────────────────────
 TITLE_RULE = """【爆款標題公式 — 必做】
@@ -512,15 +543,26 @@ def generate_story(genre, character, max_retries: int = 3):
         opening = random.choice(OPENING_HOOKS)
         villain = random.choice(VILLAINS)
 
-    # 若此類型有高分歷史，加入一條參考提示
+    # 若此類型有高分歷史，加入一條 DNA 參考提示
     winners = load_winners().get(genre["name"], [])
     winner_hint = ""
     if winners:
         ref = random.choice(winners)
-        winner_hint = f"""
+        if "irony" in ref:
+            # 新版 DNA 格式
+            winner_hint = f"""
+【⭐ 上次此類型獲最高評分的成功 DNA（參考結構，創作全新故事）】
+諷刺結構：{ref.get('irony', '')}
+主角王牌：{ref.get('trump_card', '')}
+敘事結構：{ref.get('structure', '')}
+情感核心：{ref.get('emotional_core', '')}
+→ 這套 DNA 組合曾讓讀者非常滿意，沿用相近的張力結構，但場景和人物必須全新"""
+        else:
+            # 舊版兼容
+            winner_hint = f"""
 【⭐ 上次此類型獲最高評分的成功設定（參考風格，創作全新故事）】
-開場情境：{ref['opening']}
-反派設定：{ref['villain']}
+開場情境：{ref.get('opening', '')}
+反派設定：{ref.get('villain', '')}
 → 此類開場和反派設計曾引發強烈爽感，可沿用相近的張力結構"""
 
     unique = _pick_unique_elements()
@@ -538,7 +580,7 @@ def generate_story(genre, character, max_retries: int = 3):
                 temperature=1.1,
                 max_tokens=5000,
             )
-            return response.choices[0].message.content, villain, opening
+            return response.choices[0].message.content, villain, opening, unique
         except Exception as e:
             last_err = e
             print(f"[generate_story] 第 {attempt} 次失敗：{e}")
@@ -573,8 +615,15 @@ def generate_and_send_one(genre_name=None):
     character = generate_character(genre.get("channel", "M"))
     send_telegram(f"✨ 加推生成中：{genre['name']} ·  {character['name']}，請稍候...")
 
-    content, villain, opening = generate_story(genre, character)
+    content, villain, opening, dna = generate_story(genre, character)
     print(f"[generate_and_send_one] 故事生成完成，字數={len(content)}")
+
+    # 暫存 DNA 到 Redis，供評分時學習
+    try:
+        from utils import save_story_dna
+        save_story_dna(genre["name"], dna)
+    except Exception as e:
+        print(f"[generate_and_send_one] save_story_dna 失敗（非致命）：{e}")
     header = (
         f"📖 [加推]  {genre['name']}\n"
         f"👤 {character['name']} · {character['gender']} · {character['occupation']}\n"

@@ -145,13 +145,35 @@ def record_rating(genre_name, score):
     return avg, len(ratings[genre_name])
 
 
-def record_winner(genre_name, opening, villain):
+def record_winner(genre_name, dna: dict):
+    """存入高分故事的完整 DNA，保留最近 5 個 winner。"""
     data = load_genre_data()
     winners = data.setdefault("winners", {})
     entries = winners.setdefault(genre_name, [])
-    entries.append({"opening": opening, "villain": villain})
+    entries.append(dna)
     winners[genre_name] = entries[-5:]
     save_genre_data(data)
+
+
+def record_cooldown(dna: dict):
+    """把低分故事的 DNA 元素推到 recent_dna 前端，強迫冷卻更長時間。"""
+    from utils import load_recent_dna, save_recent_dna
+    try:
+        recent = load_recent_dna()
+        COOLDOWN_WINDOW = 12  # 比正常 window(5) 大，強制更長冷卻
+        for key in ["setting", "irony", "trump_card", "villain_flaw",
+                    "emotional_core", "memorable", "structure"]:
+            val = dna.get(key, "")
+            if not val:
+                continue
+            lst = recent.get(key, [])
+            if val in lst:
+                lst.remove(val)
+            lst = [val] + lst          # 推到最前，佔住冷卻位最久
+            recent[key] = lst[:COOLDOWN_WINDOW]
+        save_recent_dna(recent)
+    except Exception as e:
+        log.error(f"record_cooldown error: {e}")
 
 
 def handle_rating(story_num, score, stories):
@@ -166,11 +188,19 @@ def handle_rating(story_num, score, stories):
             reply += "\n⚠️ 評分持續偏低，此類別出現頻率已降低"
         elif avg >= 3.8:
             reply += "\n⭐ 高分類別，出現頻率已提升"
+
+    dna = story.get("dna", {})
+    if score <= 2 and dna:
+        record_cooldown(dna)
     if score == 4:
-        opening = story.get("opening", "")
-        villain = story.get("villain", "")
-        if opening or villain:
-            record_winner(genre_name, opening, villain)
+        if dna:
+            record_winner(genre_name, dna)
+        elif story.get("opening") or story.get("villain"):
+            # 舊格式兼容
+            record_winner(genre_name, {
+                "opening": story.get("opening", ""),
+                "villain": story.get("villain", ""),
+            })
         return reply, genre_name
     return reply, None
 
@@ -178,7 +208,19 @@ def handle_rating(story_num, score, stories):
 def handle_bonus_rating(score, genre_name):
     avg, count = record_rating(genre_name, score)
     reply = f"《{genre_name}》已記錄：{RATING_LABELS[score]}"
+
+    # 讀取剛才生成嗰篇嘅 DNA
+    try:
+        from utils import load_story_dna
+        dna = load_story_dna(genre_name)
+    except Exception:
+        dna = {}
+
+    if score <= 2 and dna:
+        record_cooldown(dna)
     if score == 4:
+        if dna:
+            record_winner(genre_name, dna)
         return reply, genre_name
     return reply, None
 
@@ -190,6 +232,7 @@ def handle_stats():
         send_telegram("未有評分記錄，生成幾篇故事後再試。")
         return
 
+    # ── Genre 評分排行 ────────────────────────────────────────────
     scored = []
     for name, scores in ratings.items():
         if scores:
@@ -200,6 +243,35 @@ def handle_stats():
     for name, avg, count in scored:
         bar = "⭐" * round(avg)
         lines.append(f"{bar}  {name}（{avg:.1f}分 / {count}次）")
+
+    # ── DNA 元素洞察（高分故事用咗咩）────────────────────────────
+    winners = data.get("winners", {})
+    dna_tallies: dict[str, dict[str, int]] = {}
+    for genre_winners in winners.values():
+        for w in genre_winners:
+            for key in ["irony", "structure", "emotional_core", "trump_card"]:
+                val = w.get(key, "")
+                if val:
+                    short = val[:24] + "…" if len(val) > 24 else val
+                    dna_tallies.setdefault(key, {})
+                    dna_tallies[key][short] = dna_tallies[key].get(short, 0) + 1
+
+    if dna_tallies:
+        lines.append("\n\n🧬 你最鍾意的故事元素（高分故事統計）\n")
+        labels = {
+            "irony":          "諷刺結構",
+            "structure":      "敘事結構",
+            "emotional_core": "情感核心",
+            "trump_card":     "主角王牌",
+        }
+        for key, label in labels.items():
+            if key not in dna_tallies:
+                continue
+            top = sorted(dna_tallies[key].items(), key=lambda x: x[1], reverse=True)[:2]
+            if top:
+                lines.append(f"【{label}】")
+                for text, cnt in top:
+                    lines.append(f"  • {text}（{cnt}次）")
 
     send_telegram("\n".join(lines))
 
