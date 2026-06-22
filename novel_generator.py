@@ -81,6 +81,14 @@ SURNAMES = [
     "葉", "程", "魏", "蘇", "呂", "丁", "任", "盧", "姚", "崔",
     "江", "史", "顧", "邵", "薛", "雷", "賀", "龍", "傅", "錢",
     "秦", "尹", "廖", "鍾", "歐", "石", "方", "柳", "孔", "湯",
+    "裴", "沈", "白", "賈", "宋", "薑", "嚴", "武", "邱", "穆",
+    "衛", "霍", "安", "喬", "祝", "卓", "尤", "凌", "宮", "祁",
+]
+# 複姓（約20%機率使用）
+COMPOUND_SURNAMES = [
+    "歐陽", "司馬", "上官", "慕容", "諸葛", "夏侯", "東方", "南宮",
+    "北堂", "西門", "令狐", "獨孤", "軒轅", "皇甫", "長孫", "宇文",
+    "赫連", "澹臺", "公孫", "百里",
 ]
 MALE_FIRST = [
     "浩然", "子軒", "宇辰", "逸飛", "煜城", "天明", "靖宇", "思遠",
@@ -89,6 +97,18 @@ MALE_FIRST = [
     "千塵", "一諾", "玄夜", "煊赫", "鈞天", "臨淵", "慕白", "北辰",
     "子衿", "長歌", "驚鴻", "望舒", "燭龍", "霽月", "扶搖", "淩雲",
     "錦年", "辭安", "予懷", "景澄", "明燭", "執筆", "問心", "向晚",
+    "子洵", "北野", "懷瑾", "斂辰", "夜澤", "雪霽", "霜離", "淵默",
+    "南弦", "燎原", "奕辰", "朔風", "歸塵", "執白", "破軍", "定北",
+]
+# 男單字名
+MALE_SINGLE = [
+    "宸", "墨", "寒", "辰", "澈", "楠", "燁", "霆", "昀", "琛",
+    "晁", "煜", "翊", "珩", "曜", "洵", "桓", "睿", "湛", "瀾",
+]
+# 男三字名（整體作為 first name，搭配單姓）
+MALE_THREE_FIRST = [
+    "白塵舊", "臨淵止", "一紙書", "笑蒼生", "問長歌", "執念深",
+    "歸無期", "破萬卷", "凌雲志", "北辰寒",
 ]
 FEMALE_FIRST = [
     "若汐", "詩涵", "雨桐", "夢琪", "欣怡", "靜雯", "曉彤", "語嫣",
@@ -97,6 +117,13 @@ FEMALE_FIRST = [
     "傾城", "絕色", "冰魄", "紫蝶", "月華", "星眸", "初見", "驚鴻",
     "歲寧", "晚吟", "映雪", "聽荷", "煙柳", "雁回", "書雲", "夕顏",
     "錦繡", "辭月", "予安", "景晴", "明珠", "執念", "問雪", "向暖",
+    "折枝", "聽風", "覓渡", "斂芳", "夜未央", "煙雨濃", "思無邪",
+    "知秋意", "撫琴聲", "照無眠", "春山暮", "碧雲天",
+]
+# 女單字名
+FEMALE_SINGLE = [
+    "錦", "瑾", "璃", "昭", "玥", "鸞", "媱", "瀾", "霜", "晴",
+    "姝", "婧", "葳", "嫺", "婠", "珺", "嬋", "懿", "毓", "姮",
 ]
 OCCUPATIONS = [
     "普通公司小職員", "剛畢業的實習生", "外賣配送員", "小區保安",
@@ -181,10 +208,25 @@ def generate_character(channel="M"):
         gender = random.choice(["男", "女"])
         occupation = random.choice(OCCUPATIONS)
         personality = random.choice(PERSONALITIES)
-    surname = random.choice(SURNAMES)
-    firstname = random.choice(MALE_FIRST if gender == "男" else FEMALE_FIRST)
-    if random.random() < 0.25:
-        firstname = firstname[0]
+
+    # 姓氏：20% 複姓，80% 單姓
+    if random.random() < 0.20:
+        surname = random.choice(COMPOUND_SURNAMES)
+    else:
+        surname = random.choice(SURNAMES)
+
+    # 名字結構抽籤：
+    # 單字名 20%、三字名 10%（只配單姓）、雙字名 70%
+    roll = random.random()
+    if roll < 0.20:
+        # 單字名
+        firstname = random.choice(MALE_SINGLE if gender == "男" else FEMALE_SINGLE)
+    elif roll < 0.30 and len(surname) == 1:
+        # 三字名（僅單姓）
+        firstname = random.choice(MALE_THREE_FIRST if gender == "男" else FEMALE_FIRST[-12:])
+    else:
+        firstname = random.choice(MALE_FIRST if gender == "男" else FEMALE_FIRST)
+
     return {
         "name": surname + firstname,
         "gender": gender,
@@ -200,6 +242,52 @@ def load_winners():
     return data.get("winners", {})
 
 
+# ── 故事差異化元素池 ──────────────────────────────────────────────
+STORY_SETTINGS = [
+    "國際拍賣行的頂級藏品發布現場", "米芝蓮三星餐廳的包廂雅座",
+    "豪華郵輪的頭等艙甲板", "跨國律師事務所的高管會議室",
+    "奢侈品集團的全球董事局", "頂尖私立醫院的貴賓病房走廊",
+    "知名大學的百年紀念典禮", "五星酒店的天台私人宴會廳",
+    "古董珠寶拍賣發布會", "私人飛機的 VIP 候機室",
+    "高端婚禮的戶外草坪儀式", "藝術品鑑定機構的展廳",
+    "名流慈善晚宴的紅毯入口", "跨境電商的億元直播間",
+    "國際馬場的 VIP 觀賽包廂", "私人遊艇的海上派對",
+    "頂級私人會所的麻將室", "城市最高樓的觀景餐廳",
+]
+HIDDEN_IDENTITIES = [
+    "跨國集團的實際控股幕後人", "業界最神秘的頂級操盤手",
+    "三個月前已悄悄收購對方公司的真正老闆", "從不露面的傳奇神醫",
+    "全球排名前三的黑客組織創辦人", "那家集團的獨生繼承人",
+    "業界封神的設計大師真實身份", "失蹤十年的豪門家主嫡系",
+    "看似普通卻持有對方公司三成股份", "連對方老闆都要親自赴約的神秘合作方",
+    "政界最有影響力的幕後顧問之子女", "某頂級機構全球最年輕的合伙人",
+]
+REVERSAL_TRIGGERS = [
+    "一通電話讓全場人臉色驟變", "一張簽名支票靜靜推過桌面",
+    "手機螢幕上一個讓反派腿軟的聯絡人名字", "一個從門外走進來的神秘人認出了主角",
+    "主角只說了一個數字，全場鴉雀無聲", "反派自己翻出的文件把自己打臉",
+    "主角直接用流利外語接管了對話", "主角接過合約親筆簽下另一個更大的數字",
+    "反派引以為傲的靠山，竟當場向主角彎腰", "一段現場直播意外捕捉了完整過程",
+    "主角摘下帽沿，對方認出那張臉後說不出話", "主角的助理推門進來，帶來一份讓所有人失語的文件",
+]
+NARRATIVE_ANGLES = [
+    "以現場旁觀者（服務員／保鏢）視角一鏡到底，見證全程反轉",
+    "倒敘結構：開篇先呈現最震撼的結局一幕，再補述事件始末",
+    "以反派的心理崩潰歷程為主線，從傲慢到恐慌到崩潰逐步推進",
+    "雙線並行：主角暗中佈局 vs 反派步步進逼，最後一刻交匯引爆",
+    "極簡旁白 + 密集對白：靠嘴炮和動作說話，心理描寫不超過全文10%",
+    "先抑後揚：前三分之一把主角貶到谷底，後三分之二讓他/她一路踩臉上去",
+]
+
+def _pick_unique_elements():
+    """每次生成時隨機抽取一組差異化元素，令每篇故事有獨特舞台與觸發點。"""
+    return {
+        "setting": random.choice(STORY_SETTINGS),
+        "hidden_identity": random.choice(HIDDEN_IDENTITIES),
+        "trigger": random.choice(REVERSAL_TRIGGERS),
+        "angle": random.choice(NARRATIVE_ANGLES),
+    }
+
 # ── 爆款標題公式（男女頻共用）──────────────────────────────────────
 TITLE_RULE = """【爆款標題公式 — 必做】
 先在心中構思 3 個候選標題，揀張力最強嗰個做正式標題（只輸出最終一個）。
@@ -210,7 +298,7 @@ TITLE_RULE = """【爆款標題公式 — 必做】
 禁止：四平八穩、無衝突、太文藝睇唔明"""
 
 
-def _build_male_prompt(genre, character, villain, opening, winner_hint):
+def _build_male_prompt(genre, character, villain, opening, winner_hint, unique):
     return f"""你是頂尖中文網絡爽文作家，深諳令讀者上癮的寫作技法。
 
 【本篇設定】
@@ -220,6 +308,13 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint):
 開場情境：{opening}{winner_hint}
 
 {TITLE_RULE}
+
+【本篇獨特元素——必須融入，令故事有別於同類型】
+故事舞台：{unique['setting']}
+主角隱藏身份：{unique['hidden_identity']}
+打臉觸發點：{unique['trigger']}
+敘事風格：{unique['angle']}
+⚠️ 以上四個元素必須有機融入情節，嚴禁套用「被羞辱→掏出名片→所有人跪地」的慣常公式
 
 【核心寫法：三翻四抖】
 爽文讓人追看的秘訣是「三翻四抖」——三次情勢反轉，四個震撼時刻，讓讀者情緒像過山車。
@@ -247,7 +342,7 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint):
 開始："""
 
 
-def _build_female_prompt(genre, character, villain, opening, winner_hint):
+def _build_female_prompt(genre, character, villain, opening, winner_hint, unique):
     return f"""你是頂尖中文網絡言情爽文作家，深諳令女性讀者上癮的「虐爽」技法。
 
 【本篇設定】
@@ -257,6 +352,13 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint):
 開場情境：{opening}{winner_hint}
 
 {TITLE_RULE}
+
+【本篇獨特元素——必須融入，令故事有別於同類型】
+故事舞台：{unique['setting']}
+女主隱藏身份：{unique['hidden_identity']}
+反轉觸發點：{unique['trigger']}
+敘事風格：{unique['angle']}
+⚠️ 以上四個元素必須有機融入情節，嚴禁套用「被羞辱→掏出身份→男主跪地求原諒」的慣常公式
 
 【女頻核心爽點：虐渣 + 追悔 + 雙向反轉】
 ・前段虐：渣男賤女如何當眾踐踏女主尊嚴，越具體越欠揍，讓讀者恨到牙癢癢
@@ -303,10 +405,11 @@ def generate_story(genre, character, max_retries: int = 3):
 反派設定：{ref['villain']}
 → 此類開場和反派設計曾引發強烈爽感，可沿用相近的張力結構"""
 
+    unique = _pick_unique_elements()
     if channel == "F":
-        prompt = _build_female_prompt(genre, character, villain, opening, winner_hint)
+        prompt = _build_female_prompt(genre, character, villain, opening, winner_hint, unique)
     else:
-        prompt = _build_male_prompt(genre, character, villain, opening, winner_hint)
+        prompt = _build_male_prompt(genre, character, villain, opening, winner_hint, unique)
 
     last_err = None
     for attempt in range(1, max_retries + 1):
