@@ -538,7 +538,7 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique):
 ✗ 反派莫名其妙變好人
 ✗ 結尾不足200字或用「從此過上幸福生活」一句帶過
 
-字數：2200至2800字 ｜ 繁體中文 ｜ 直接從標題開始寫正文
+字數：3000至4500字 ｜ 繁體中文 ｜ 直接從標題開始寫正文
 
 開始："""
 
@@ -622,7 +622,7 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 ✗ 結尾男主求復合，女主卻猶豫心軟（她已經贏了，不需要他了）
 ✗ 結尾不足200字或用「從此過上幸福生活」一句帶過
 
-字數：2200至2800字 ｜ 繁體中文 ｜ 直接從標題開始寫正文
+字數：3000至4500字 ｜ 繁體中文 ｜ 直接從標題開始寫正文
 
 開始："""
 
@@ -673,7 +673,7 @@ def generate_story(genre, character, max_retries: int = 3):
                 model="deepseek-chat",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=1.1,
-                max_tokens=5000,
+                max_tokens=7000,
             )
             return response.choices[0].message.content, villain, opening, unique
         except Exception as e:
