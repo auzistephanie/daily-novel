@@ -275,31 +275,71 @@ def handle_stats():
 # ── /list 及 /litlist 類別選單 ───────────────────────────────────
 
 def handle_list():
-    """顯示爽文所有類別，每個都係可以 tap 直接生成的按鈕。"""
+    """顯示爽文頻道選擇（男頻/女頻），tap 後再選具體類別。"""
+    m_count = sum(1 for g in GENRES if g.get("channel") == "M")
+    f_count = sum(1 for g in GENRES if g.get("channel") == "F")
+    keyboard = [[
+        {"text": f"🔥 男頻爽文（{m_count}類）", "callback_data": "listch_M"},
+        {"text": f"💕 女頻言情（{f_count}類）", "callback_data": "listch_F"},
+    ]]
+    send_telegram("📚 選擇頻道：", reply_markup={"inline_keyboard": keyboard})
+
+
+def handle_list_channel(channel: str):
+    """顯示指定頻道的爽文類別列表。"""
+    label = "🔥 男頻爽文" if channel == "M" else "💕 女頻言情"
+    genres = [g for g in GENRES if g.get("channel") == channel]
     keyboard = []
     row = []
-    for g in GENRES:
+    for g in genres:
         row.append({"text": g["name"], "callback_data": f"pick_{g['name']}"})
         if len(row) == 2:
             keyboard.append(row)
             row = []
     if row:
         keyboard.append(row)
-    send_telegram("📚 爽文類別，tap 即生成：", reply_markup={"inline_keyboard": keyboard})
+    send_telegram(f"{label} — tap 即生成：", reply_markup={"inline_keyboard": keyboard})
+
+
+_LIT_MOOD_EMOJI = {
+    "溫暖": "🌞", "敬畏": "🌌", "唏噓": "😔", "解氣": "🔥",
+    "治癒": "🌿", "心酸": "💧", "餘韻": "🌙", "荒謬": "🎭",
+}
 
 
 def handle_litlist():
-    """顯示情感文學所有類別，每個都係可以 tap 直接生成的按鈕。"""
+    """顯示情感文學的情緒分類，tap 後再選具體故事類型。"""
+    from collections import defaultdict
+    by_mood = defaultdict(int)
+    for g in LIT_GENRES:
+        by_mood[g["mood"]] += 1
     keyboard = []
     row = []
-    for g in LIT_GENRES:
+    for mood, count in sorted(by_mood.items(), key=lambda x: -x[1]):
+        emoji = _LIT_MOOD_EMOJI.get(mood, "📖")
+        row.append({"text": f"{emoji} {mood}（{count}）", "callback_data": f"litmd_{mood}"})
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+    send_telegram("📖 選擇情緒基調：", reply_markup={"inline_keyboard": keyboard})
+
+
+def handle_litlist_mood(mood: str):
+    """顯示指定情緒基調的情感文學類別。"""
+    emoji = _LIT_MOOD_EMOJI.get(mood, "📖")
+    genres = [g for g in LIT_GENRES if g["mood"] == mood]
+    keyboard = []
+    row = []
+    for g in genres:
         row.append({"text": g["name"], "callback_data": f"picklit_{g['name']}"})
         if len(row) == 2:
             keyboard.append(row)
             row = []
     if row:
         keyboard.append(row)
-    send_telegram("📖 情感文學類別，tap 即生成：", reply_markup={"inline_keyboard": keyboard})
+    send_telegram(f"{emoji} {mood} — tap 即生成：", reply_markup={"inline_keyboard": keyboard})
 
 
 # ── Callback 處理 ─────────────────────────────────────────────────
@@ -355,6 +395,16 @@ def handle_callback(cb):
             send_toc_menu(stories)
         else:
             answer_callback(cb["id"], "找不到該日故事")
+
+    elif cb_data.startswith("listch_"):
+        channel = cb_data[7:]
+        answer_callback(cb["id"], "載入類別...")
+        handle_list_channel(channel)
+
+    elif cb_data.startswith("litmd_"):
+        mood = cb_data[6:]
+        answer_callback(cb["id"], f"載入{mood}類別...")
+        handle_litlist_mood(mood)
 
     elif cb_data.startswith("pick_"):
         genre_name = cb_data[5:]
