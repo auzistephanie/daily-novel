@@ -458,7 +458,11 @@ TITLE_RULE = """【爆款標題公式 — 必做】
 禁止：四平八穩、無衝突、太文藝睇唔明"""
 
 
-def _build_male_prompt(genre, character, villain, opening, winner_hint, unique):
+def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, trending_hint=""):
+    _trend = (
+        f"\n【🔥 今日爆款素材參考（從實時熱搜蒸餾，自然融入 1-2 個最合適的，唔需要強塞）】\n{trending_hint}\n"
+        if trending_hint else ""
+    )
     return f"""你是頂尖中文網絡爽文作家，你的故事能讓讀者看第一句就放不下。
 
 ══════════════════════════════════
@@ -539,11 +543,15 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique):
 ✗ 結尾不足200字或用「從此過上幸福生活」一句帶過
 
 字數：3000至4500字 ｜ 繁體中文 ｜ 直接從標題開始寫正文
-
+{_trend}
 開始："""
 
 
-def _build_female_prompt(genre, character, villain, opening, winner_hint, unique):
+def _build_female_prompt(genre, character, villain, opening, winner_hint, unique, trending_hint=""):
+    _trend = (
+        f"\n【🔥 今日爆款素材參考（從實時熱搜蒸餾，自然融入 1-2 個最合適的，唔需要強塞）】\n{trending_hint}\n"
+        if trending_hint else ""
+    )
     return f"""你是頂尖中文網絡言情爽文作家，你的故事讓女性讀者看完想截圖轉發。
 
 ══════════════════════════════════
@@ -623,7 +631,7 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 ✗ 結尾不足200字或用「從此過上幸福生活」一句帶過
 
 字數：3000至4500字 ｜ 繁體中文 ｜ 直接從標題開始寫正文
-
+{_trend}
 開始："""
 
 
@@ -661,10 +669,19 @@ def generate_story(genre, character, max_retries: int = 3):
 → 此類開場和反派設計曾引發強烈爽感，可沿用相近的張力結構"""
 
     unique = _pick_unique_elements()
+
+    # 抓實時 trending 素材（失敗唔影響主流程）
+    trending_hint = ""
+    try:
+        from utils import fetch_trending_topics
+        trending_hint = fetch_trending_topics(channel)
+    except Exception as e:
+        print(f"[generate_story] trending 抓取失敗（非致命）：{e}")
+
     if channel == "F":
-        prompt = _build_female_prompt(genre, character, villain, opening, winner_hint, unique)
+        prompt = _build_female_prompt(genre, character, villain, opening, winner_hint, unique, trending_hint)
     else:
-        prompt = _build_male_prompt(genre, character, villain, opening, winner_hint, unique)
+        prompt = _build_male_prompt(genre, character, villain, opening, winner_hint, unique, trending_hint)
 
     last_err = None
     for attempt in range(1, max_retries + 1):

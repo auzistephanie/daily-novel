@@ -141,6 +141,98 @@ def send_telegram(text: str, reply_markup=None, max_retries: int = 3) -> None:
                 print(f"Telegram 請求異常（第 {attempt} 次）: {e}")
 
 
+# ── Trending 素材抓取 ─────────────────────────────────────────────
+
+def fetch_trending_topics(channel: str = "M") -> str:
+    """
+    抓取微博熱搜 + 用 DeepSeek 蒸餾成爽文素材提示。
+    結果 cache 3 小時，唔係每次都打 API。
+    channel: "M" 男頻 / "F" 女頻
+    返回一段給 prompt 用的素材字串（失敗返回空字串）。
+    """
+    import time
+
+    CACHE_FILE = BASE_DIR / "trending_cache.json"
+    CACHE_TTL = 3 * 3600  # 3 小時
+
+    # 讀 cache
+    try:
+        cache = _json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+        if time.time() - cache.get("timestamp", 0) < CACHE_TTL:
+            result = cache.get(channel, "")
+            if result:
+                print(f"[trending] 用 cache ({channel})")
+                return result
+    except Exception:
+        cache = {}
+
+    # 抓微博熱搜
+    hot_words = []
+    try:
+        resp = requests.get(
+            "https://weibo.com/ajax/side/hotSearch",
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                "Referer": "https://weibo.com/",
+            },
+            timeout=8,
+        )
+        data = resp.json().get("data", {})
+        for item in (data.get("realtime", []) + data.get("hotgov", []))[:30]:
+            word = item.get("word", "")
+            if word:
+                hot_words.append(word)
+        print(f"[trending] 微博熱搜抓到 {len(hot_words)} 條")
+    except Exception as e:
+        print(f"[trending] 微博熱搜抓取失敗：{e}")
+
+    hot_words_text = "、".join(hot_words[:20]) if hot_words else "（暫無數據）"
+
+    # 用 DeepSeek 蒸餾成男／女頻爽文素材
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=os.getenv("DEEPSEEK_API_KEY"),
+            base_url="https://api.deepseek.com"
+        )
+
+        result_m, result_f = "", ""
+        for ch, label in [("M", "男頻爽文（打臉逆襲）"), ("F", "女頻言情（虐渣追悔）")]:
+            prompt = (
+                f"今日微博熱搜熱詞（背景參考）：{hot_words_text}\n\n"
+                f"結合以上熱詞 + 你對 2026 年中文短劇市場的最新了解，為「{label}」提供：\n"
+                f"1. 3-5 個而家最紅的劇情套路或題材（一行一個）\n"
+                f"2. 2-3 個可直接用入故事的具體細節或情境\n"
+                f"   （例：最新流行身份設定、觀眾最 HIGH 的場景類型、爆款台詞風格）\n\n"
+                f"要求：直接輸出，唔需要標題解釋，每條唔超過 30 字，總字數唔超過 200 字。"
+            )
+            resp = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.8,
+                max_tokens=400,
+            )
+            text = resp.choices[0].message.content.strip()
+            if ch == "M":
+                result_m = text
+            else:
+                result_f = text
+            print(f"[trending] DeepSeek 蒸餾完成 ({ch})")
+
+        # 儲存 cache
+        new_cache = {
+            "M": result_m,
+            "F": result_f,
+            "timestamp": time.time(),
+        }
+        CACHE_FILE.write_text(_json.dumps(new_cache, ensure_ascii=False, indent=2), encoding="utf-8")
+        return new_cache.get(channel, "")
+
+    except Exception as e:
+        print(f"[trending] DeepSeek 蒸餾失敗：{e}")
+        return ""
+
+
 def send_toc_menu(stories_data: list) -> None:
     """發送今日故事目錄（可點擊的 inline keyboard）。"""
     keyboard = []
