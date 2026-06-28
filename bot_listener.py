@@ -35,6 +35,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 from novel_generator import GENRES
+from lit_generator import LIT_GENRES
 from utils import (
     load_genre_data, save_genre_data,
     send_telegram, send_toc_menu,
@@ -56,8 +57,10 @@ def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
-        {"command": "now",     "description": "即時生成1篇新故事"},
-        {"command": "list",    "description": "瀏覽所有類別，tap 即生成"},
+        {"command": "now",     "description": "即時生成1篇爽文（打臉逆襲）"},
+        {"command": "lit",     "description": "即時生成1篇情感文學故事"},
+        {"command": "list",    "description": "瀏覽爽文類別，tap 即生成"},
+        {"command": "litlist", "description": "瀏覽情感文學類別，tap 即生成"},
         {"command": "more",    "description": "從你的高分類別加推1篇"},
         {"command": "stats",   "description": "查看各類別評分統計"},
         {"command": "menu",    "description": "重讀今日故事目錄"},
@@ -276,20 +279,34 @@ def handle_stats():
     send_telegram("\n".join(lines))
 
 
-# ── /list 類別選單 ────────────────────────────────────────────────
+# ── /list 及 /litlist 類別選單 ───────────────────────────────────
 
 def handle_list():
-    """顯示所有類別，每個都係可以 tap 直接生成的按鈕。"""
+    """顯示爽文所有類別，每個都係可以 tap 直接生成的按鈕。"""
     keyboard = []
     row = []
-    for i, g in enumerate(GENRES):
+    for g in GENRES:
         row.append({"text": g["name"], "callback_data": f"pick_{g['name']}"})
         if len(row) == 2:
             keyboard.append(row)
             row = []
     if row:
         keyboard.append(row)
-    send_telegram("📚 選擇類別，tap 即生成：", reply_markup={"inline_keyboard": keyboard})
+    send_telegram("📚 爽文類別，tap 即生成：", reply_markup={"inline_keyboard": keyboard})
+
+
+def handle_litlist():
+    """顯示情感文學所有類別，每個都係可以 tap 直接生成的按鈕。"""
+    keyboard = []
+    row = []
+    for g in LIT_GENRES:
+        row.append({"text": g["name"], "callback_data": f"picklit_{g['name']}"})
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+    send_telegram("📖 情感文學類別，tap 即生成：", reply_markup={"inline_keyboard": keyboard})
 
 
 # ── Callback 處理 ─────────────────────────────────────────────────
@@ -351,6 +368,11 @@ def handle_callback(cb):
         answer_callback(cb["id"], f"生成《{genre_name}》中...")
         threading.Thread(target=_run_generate_one, args=(genre_name,), daemon=True).start()
 
+    elif cb_data.startswith("picklit_"):
+        genre_name = cb_data[8:]
+        answer_callback(cb["id"], f"生成《{genre_name}》中...")
+        threading.Thread(target=_run_generate_lit, args=(genre_name,), daemon=True).start()
+
     elif cb_data.startswith("more_"):
         genre_name = cb_data[5:]
         if genre_name == "skip":
@@ -370,6 +392,14 @@ def _run_generate_one(genre_name=None):
         send_telegram(f"⚠️ 生成失敗：{e}")
 
 
+def _run_generate_lit(genre_name=None):
+    try:
+        from lit_generator import generate_and_send_lit
+        generate_and_send_lit(genre_name)
+    except Exception as e:
+        send_telegram(f"⚠️ 情感文學生成失敗：{e}")
+
+
 # ── 文字指令處理 ──────────────────────────────────────────────────
 
 def cmd(text, command):
@@ -382,8 +412,13 @@ def handle_message(text):
     if cmd(text, "/help") or cmd(text, "/start"):
         send_telegram(
             "📖 小說機器人指令\n\n"
-            "/now — 即時生成1篇新故事\n"
-            "/list — 瀏覽所有類別，tap 即生成\n"
+            "🔥 爽文模式（打臉逆襲）\n"
+            "/now — 即時生成1篇爽文\n"
+            "/list — 瀏覽爽文類別，tap 即生成\n\n"
+            "📚 情感文學模式\n"
+            "/lit — 即時生成1篇情感文學故事\n"
+            "/litlist — 瀏覽情感文學類別，tap 即生成\n\n"
+            "⚙️ 其他\n"
             "/more — 從高分類別加推1篇\n"
             "/stats — 查看各類別評分統計\n"
             "/menu — 重讀今日故事目錄\n"
@@ -393,12 +428,21 @@ def handle_message(text):
         return
 
     if cmd(text, "/now"):
-        send_telegram("✨ 即時生成1篇新故事，請稍候...")
+        send_telegram("✨ 即時生成1篇爽文，請稍候...")
         threading.Thread(target=_run_generate_one, args=(None,), daemon=True).start()
+        return
+
+    if cmd(text, "/lit"):
+        send_telegram("📚 即時生成1篇情感文學故事，請稍候...")
+        threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
         return
 
     if cmd(text, "/list"):
         handle_list()
+        return
+
+    if cmd(text, "/litlist"):
+        handle_litlist()
         return
 
     if cmd(text, "/more"):

@@ -197,7 +197,7 @@ def fetch_trending_topics(channel: str = "M") -> str:
         )
 
         result_m, result_f = "", ""
-        for ch, label in [("M", "男頻爽文（打臉逆襲）"), ("F", "女頻言情（虐渣追悔）")]:
+        for ch, label in [("M", "男頻爽文（打臉逆襲）"), ("F", "女頻言情（虐渣追悔）"), ("L", "情感文學（情緒共鳴、人情冷暖）")]:
             prompt = (
                 f"今日微博熱搜熱詞（背景參考）：{hot_words_text}\n\n"
                 f"結合以上熱詞 + 你對 2026 年中文短劇市場的最新了解，為「{label}」提供：\n"
