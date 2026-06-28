@@ -699,8 +699,11 @@ def generate_story(genre, character, max_retries: int = 3):
     raise RuntimeError(f"生成失敗（已重試 {max_retries} 次）：{last_err}")
 
 
-def generate_and_send_one(genre_name=None):
-    """按需生成並發送單篇故事。genre_name 指定類型，None 則從高分類型中選。"""
+def generate_and_send_one(genre_name=None, label="📖"):
+    """按需生成並發送單篇故事。
+    genre_name: 指定類型，None 則從高分類型中選。
+    label: header 前綴，例如 '📖'（新生成）/ '📖 [加推]' / '📖 [指定]'。
+    """
     if genre_name:
         genre = next((g for g in GENRES if g["name"] == genre_name), None) or random.choice(GENRES)
     else:
@@ -725,7 +728,8 @@ def generate_and_send_one(genre_name=None):
             genre = weighted_choice(GENRES)
 
     character = generate_character(genre.get("channel", "M"), genre.get("name", ""))
-    send_telegram(f"✨ 加推生成中：{genre['name']} ·  {character['name']}，請稍候...")
+    _label_display = f" {label}" if label else ""
+    send_telegram(f"✨ 生成中{_label_display}：{genre['name']} · {character['name']}，請稍候（約 30 秒）...")
 
     content, villain, opening, dna = generate_story(genre, character)
     print(f"[generate_and_send_one] 故事生成完成，字數={len(content)}")
@@ -736,8 +740,10 @@ def generate_and_send_one(genre_name=None):
         save_story_dna(genre["name"], dna)
     except Exception as e:
         print(f"[generate_and_send_one] save_story_dna 失敗（非致命）：{e}")
+
+    _header_label = f"  {label}" if label else ""
     header = (
-        f"📖 [加推]  {genre['name']}\n"
+        f"📖{_header_label}  {genre['name']}\n"
         f"👤 {character['name']} · {character['gender']} · {character['occupation']}\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
     )

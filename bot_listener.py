@@ -112,8 +112,7 @@ def handle_history():
 
 
 def send_story(story_num, stories):
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    from utils import _split_text
     s = stories[story_num - 1]
     header = (
         f"📖 [{story_num}/{len(stories)}]  {s['genre']}\n"
@@ -121,19 +120,13 @@ def send_story(story_num, stories):
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
     )
     full_text = header + s["content"]
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    max_len = 4000
-    chunks = [full_text[i:i + max_len] for i in range(0, len(full_text), max_len)]
-    for idx, chunk in enumerate(chunks):
-        payload = {"chat_id": chat_id, "text": chunk}
-        if idx == len(chunks) - 1:
-            payload["reply_markup"] = {"inline_keyboard": [[
-                {"text": "😞 差",   "callback_data": f"rate_{story_num}_1"},
-                {"text": "😐 一般", "callback_data": f"rate_{story_num}_2"},
-                {"text": "😊 好",   "callback_data": f"rate_{story_num}_3"},
-                {"text": "🤩 超好", "callback_data": f"rate_{story_num}_4"},
-            ]]}
-        requests.post(url, json=payload, timeout=15)
+    rating_keyboard = {"inline_keyboard": [[
+        {"text": "😞 差",   "callback_data": f"rate_{story_num}_1"},
+        {"text": "😐 一般", "callback_data": f"rate_{story_num}_2"},
+        {"text": "😊 好",   "callback_data": f"rate_{story_num}_3"},
+        {"text": "🤩 超好", "callback_data": f"rate_{story_num}_4"},
+    ]]}
+    send_telegram(full_text, reply_markup=rating_keyboard)
 
 
 # ── 評分與統計 ────────────────────────────────────────────────────
@@ -366,7 +359,7 @@ def handle_callback(cb):
     elif cb_data.startswith("pick_"):
         genre_name = cb_data[5:]
         answer_callback(cb["id"], f"生成《{genre_name}》中...")
-        threading.Thread(target=_run_generate_one, args=(genre_name,), daemon=True).start()
+        threading.Thread(target=_run_generate_one, args=(genre_name, "[指定]"), daemon=True).start()
 
     elif cb_data.startswith("picklit_"):
         genre_name = cb_data[8:]
@@ -378,18 +371,20 @@ def handle_callback(cb):
         if genre_name == "skip":
             answer_callback(cb["id"], "好，下次見！")
             return
-        answer_callback(cb["id"], "生成中，稍等...")
-        threading.Thread(target=_run_generate_one, args=(genre_name,), daemon=True).start()
+        answer_callback(cb["id"], "加推生成中...")
+        threading.Thread(target=_run_generate_one, args=(genre_name, "[加推]"), daemon=True).start()
 
 
 # ── 生成執行緒 ────────────────────────────────────────────────────
 
-def _run_generate_one(genre_name=None):
+def _run_generate_one(genre_name=None, label=""):
     try:
         from novel_generator import generate_and_send_one
-        generate_and_send_one(genre_name)
+        generate_and_send_one(genre_name, label=label)
     except Exception as e:
-        send_telegram(f"⚠️ 生成失敗：{e}")
+        import traceback
+        print(f"[_run_generate_one] 錯誤：{traceback.format_exc()}")
+        send_telegram("⚠️ 故事生成失敗，請稍後再試（/now 重新生成）")
 
 
 def _run_generate_lit(genre_name=None):
@@ -397,7 +392,9 @@ def _run_generate_lit(genre_name=None):
         from lit_generator import generate_and_send_lit
         generate_and_send_lit(genre_name)
     except Exception as e:
-        send_telegram(f"⚠️ 情感文學生成失敗：{e}")
+        import traceback
+        print(f"[_run_generate_lit] 錯誤：{traceback.format_exc()}")
+        send_telegram("⚠️ 情感文學生成失敗，請稍後再試（/lit 重新生成）")
 
 
 # ── 文字指令處理 ──────────────────────────────────────────────────
@@ -428,12 +425,10 @@ def handle_message(text):
         return
 
     if cmd(text, "/now"):
-        send_telegram("✨ 即時生成1篇爽文，請稍候...")
-        threading.Thread(target=_run_generate_one, args=(None,), daemon=True).start()
+        threading.Thread(target=_run_generate_one, args=(None, ""), daemon=True).start()
         return
 
     if cmd(text, "/lit"):
-        send_telegram("📚 即時生成1篇情感文學故事，請稍候...")
         threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
         return
 
@@ -446,8 +441,7 @@ def handle_message(text):
         return
 
     if cmd(text, "/more"):
-        send_telegram("✨ 從你的高分類別加推1篇，生成中...")
-        threading.Thread(target=_run_generate_one, args=(None,), daemon=True).start()
+        threading.Thread(target=_run_generate_one, args=(None, "[加推]"), daemon=True).start()
         return
 
     if cmd(text, "/stats"):
@@ -468,8 +462,7 @@ def handle_message(text):
     if cmd(text, "/pick"):
         genre_name = text.split(maxsplit=1)[1].strip() if len(text.split()) > 1 else ""
         if genre_name:
-            send_telegram(f"✨ 生成《{genre_name}》中...")
-            threading.Thread(target=_run_generate_one, args=(genre_name,), daemon=True).start()
+            threading.Thread(target=_run_generate_one, args=(genre_name, "[指定]"), daemon=True).start()
         else:
             handle_list()
         return
