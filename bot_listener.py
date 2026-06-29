@@ -57,12 +57,12 @@ def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
-        {"command": "now",     "description": "即時生成1篇爽文（打臉逆襲）"},
+        {"command": "now",     "description": "即時生成1篇爽文"},
         {"command": "lit",     "description": "即時生成1篇情感文學故事"},
-        {"command": "list",    "description": "瀏覽爽文類別，tap 即生成"},
-        {"command": "litlist", "description": "瀏覽情感文學類別，tap 即生成"},
-        {"command": "more",    "description": "從你的高分類別加推1篇"},
-        {"command": "stats",   "description": "查看各類別評分統計"},
+        {"command": "list",    "description": "選頻道 → 選類別 → 生成爽文"},
+        {"command": "litlist", "description": "選情緒基調 → 選類別 → 生成情感文學"},
+        {"command": "more",    "description": "從高分類別加推1篇爽文"},
+        {"command": "stats",   "description": "各類別評分統計"},
         {"command": "menu",    "description": "重讀今日故事目錄"},
         {"command": "history", "description": "瀏覽最近7日故事"},
         {"command": "help",    "description": "指令說明"},
@@ -461,13 +461,13 @@ def handle_message(text):
             "📖 小說機器人指令\n\n"
             "🔥 爽文模式（打臉逆襲）\n"
             "/now — 即時生成1篇爽文\n"
-            "/list — 瀏覽爽文類別，tap 即生成\n\n"
+            "/list — 選頻道 → 選類別 → 生成\n"
+            "/more — 從高分類別加推1篇\n\n"
             "📚 情感文學模式\n"
             "/lit — 即時生成1篇情感文學故事\n"
-            "/litlist — 瀏覽情感文學類別，tap 即生成\n\n"
+            "/litlist — 選情緒基調 → 選類別 → 生成\n\n"
             "⚙️ 其他\n"
-            "/more — 從高分類別加推1篇\n"
-            "/stats — 查看各類別評分統計\n"
+            "/stats — 各類別評分統計\n"
             "/menu — 重讀今日故事目錄\n"
             "/history — 瀏覽最近7日故事\n\n"
             "💡 打 / 可快速呼出所有指令"
