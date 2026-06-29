@@ -177,15 +177,10 @@ def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
-        {"command": "now",     "description": "即時生成1篇爽文"},
-        {"command": "list",    "description": "選頻道 → 選類別 → 生成"},
-        {"command": "more",    "description": "從高分類別加推1篇"},
-        {"command": "lit",     "description": "即時生成1篇情感文學故事"},
-        {"command": "litlist", "description": "選情緒基調 → 選類別 → 生成"},
-        {"command": "today",   "description": "今日故事目錄"},
-        {"command": "fav",     "description": "收藏故事"},
-        {"command": "stats",   "description": "各類別評分統計"},
-        {"command": "history", "description": "瀏覽最近7日故事"},
+        {"command": "now",     "description": "即時爽文（隨機生成）"},
+        {"command": "lit",     "description": "即時情感文學（隨機生成）"},
+        {"command": "browse",  "description": "揀類別生成"},
+        {"command": "library", "description": "今日 / 收藏 / 歷史 / 統計"},
         {"command": "help",    "description": "指令說明"},
     ]
     requests.post(
@@ -475,6 +470,30 @@ def handle_litlist_mood(mood: str):
     send_telegram(f"{emoji} {mood} — tap 即生成：", reply_markup={"inline_keyboard": keyboard})
 
 
+def handle_browse():
+    """顯示 /browse 頂層選擇：爽文 or 情感文學。"""
+    m_count = sum(1 for g in GENRES if g.get("channel") == "M")
+    f_count = sum(1 for g in GENRES if g.get("channel") == "F")
+    keyboard = [
+        [{"text": f"🔥 男頻爽文（{m_count}類）", "callback_data": "listch_M"},
+         {"text": f"💕 女頻言情（{f_count}類）", "callback_data": "listch_F"}],
+        [{"text": f"📚 情感文學（{len(LIT_GENRES)}類）", "callback_data": "browse_lit"}],
+    ]
+    send_telegram("📖 揀類別生成：", reply_markup={"inline_keyboard": keyboard})
+
+
+def handle_library():
+    """顯示故事庫選項：今日 / 收藏 / 歷史 / 統計。"""
+    keyboard = [[
+        {"text": "📖 今日故事", "callback_data": "lib_today"},
+        {"text": "⭐ 收藏",     "callback_data": "lib_fav"},
+    ], [
+        {"text": "🕐 近7日",    "callback_data": "lib_history"},
+        {"text": "📊 統計",     "callback_data": "lib_stats"},
+    ]]
+    send_telegram("📚 故事庫：", reply_markup={"inline_keyboard": keyboard})
+
+
 # ── Callback 處理 ─────────────────────────────────────────────────
 
 def handle_callback(cb):
@@ -549,6 +568,30 @@ def handle_callback(cb):
             send_toc_menu(stories)
         else:
             answer_callback(cb["id"], "找不到該日故事")
+
+    elif cb_data == "browse_lit":
+        answer_callback(cb["id"], "載入情感文學...")
+        handle_litlist()
+
+    elif cb_data == "lib_today":
+        stories = get_today_stories()
+        answer_callback(cb["id"], "載入今日故事...")
+        if stories:
+            send_toc_menu(stories)
+        else:
+            send_telegram("今日未有故事，用 /now 或 /lit 即時生成。")
+
+    elif cb_data == "lib_fav":
+        answer_callback(cb["id"], "載入收藏...")
+        handle_fav()
+
+    elif cb_data == "lib_history":
+        answer_callback(cb["id"], "載入歷史...")
+        handle_history()
+
+    elif cb_data == "lib_stats":
+        answer_callback(cb["id"], "載入統計...")
+        handle_stats()
 
     elif cb_data.startswith("listch_"):
         channel = cb_data[7:]
@@ -643,20 +686,17 @@ def handle_message(text):
 
     if cmd(text, "/help") or cmd(text, "/start"):
         send_telegram(
-            "📖 小說機器人指令\n\n"
-            "🔥 爽文模式（打臉逆襲）\n"
-            "/now — 即時生成1篇爽文\n"
-            "/list — 選頻道 → 選類別 → 生成\n"
-            "/more — 從高分類別加推1篇\n\n"
-            "📚 情感文學模式\n"
-            "/lit — 即時生成1篇情感文學故事\n"
-            "/litlist — 選情緒基調 → 選類別 → 生成\n\n"
-            "📋 故事管理\n"
+            "📖 小說機器人\n\n"
+            "/now — 即時爽文（隨機生成）\n"
+            "/lit — 即時情感文學（隨機生成）\n"
+            "/browse — 揀類別生成\n"
+            "/library — 今日故事 / 收藏 / 歷史 / 統計\n\n"
+            "進階指令：\n"
+            "/more — 從高分類別加推1篇\n"
             "/today — 今日故事目錄\n"
             "/fav — 收藏故事\n"
-            "/history — 瀏覽最近7日故事\n"
-            "/stats — 各類別評分統計\n\n"
-            "💡 打 / 可快速呼出所有指令"
+            "/history — 近7日故事\n"
+            "/stats — 評分統計"
         )
         return
 
@@ -666,6 +706,14 @@ def handle_message(text):
 
     if cmd(text, "/lit"):
         threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
+        return
+
+    if cmd(text, "/browse"):
+        handle_browse()
+        return
+
+    if cmd(text, "/library"):
+        handle_library()
         return
 
     if cmd(text, "/list"):
