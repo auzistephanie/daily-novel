@@ -58,10 +58,10 @@ def register_commands():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
         {"command": "now",     "description": "即時生成1篇爽文"},
+        {"command": "list",    "description": "選頻道 → 選類別 → 生成"},
+        {"command": "more",    "description": "從高分類別加推1篇"},
         {"command": "lit",     "description": "即時生成1篇情感文學故事"},
-        {"command": "list",    "description": "選頻道 → 選類別 → 生成爽文"},
-        {"command": "litlist", "description": "選情緒基調 → 選類別 → 生成情感文學"},
-        {"command": "more",    "description": "從高分類別加推1篇爽文"},
+        {"command": "litlist", "description": "選情緒基調 → 選類別 → 生成"},
         {"command": "stats",   "description": "各類別評分統計"},
         {"command": "menu",    "description": "重讀今日故事目錄"},
         {"command": "history", "description": "瀏覽最近7日故事"},
