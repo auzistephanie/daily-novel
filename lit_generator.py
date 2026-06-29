@@ -543,6 +543,20 @@ def generate_and_send_lit(genre_name: str | None = None):
         ]]
     }
 
+    # 存盤到今日故事檔案，供 /menu 重讀
+    try:
+        from utils import save_story_to_disk
+        save_story_to_disk({
+            "type": "lit",
+            "genre": genre["name"],
+            "mood": mood,
+            "style": style_name,
+            "character": character,
+            "content": content,
+        })
+    except Exception as e:
+        print(f"[generate_and_send_lit] save_story_to_disk 失敗（非致命）：{e}")
+
     send_telegram(header + content, reply_markup=rating_keyboard)
     print("[generate_and_send_lit] send_telegram 完成")
 

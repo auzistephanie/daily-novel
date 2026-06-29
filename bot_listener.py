@@ -18,6 +18,7 @@ if str(BASE_DIR) not in sys.path:
 load_dotenv(BASE_DIR / ".env")
 
 STORIES_DIR = BASE_DIR / "stories"
+FAVS_FILE   = BASE_DIR / "favourites.json"
 
 RATING_LABELS = {1: "😞 差", 2: "😐 一般", 3: "😊 好", 4: "🤩 超好"}
 
@@ -53,6 +54,125 @@ def answer_callback(callback_query_id, text=""):
     )
 
 
+def _typing_loop(stop_event):
+    """每 4 秒發一次 typing action，令用家知道 bot 仍在工作。"""
+    token   = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    url = f"https://api.telegram.org/bot{token}/sendChatAction"
+    while not stop_event.is_set():
+        try:
+            requests.post(url, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
+        except Exception:
+            pass
+        stop_event.wait(4)
+
+
+# ── 收藏功能 ──────────────────────────────────────────────────────
+
+def load_favourites() -> list:
+    if FAVS_FILE.exists():
+        with open(FAVS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def _save_favourites(favs: list) -> None:
+    FAVS_FILE.write_text(json.dumps(favs, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def add_favourite_by_num(story_num: int) -> bool:
+    """從今日故事（by index）加入收藏，返回是否成功。"""
+    stories = get_today_stories()
+    if not stories or story_num < 1 or story_num > len(stories):
+        return False
+    s = stories[story_num - 1]
+    today = datetime.now().strftime("%Y-%m-%d")
+    return _append_fav(today, s)
+
+
+def add_favourite_by_genre(genre_name: str) -> bool:
+    """從今日故事（by genre name）加入收藏，返回是否成功。"""
+    stories = get_today_stories()
+    if not stories:
+        return False
+    # 取最近一篇（list 末尾）
+    matches = [s for s in stories if s["genre"] == genre_name]
+    if not matches:
+        return False
+    s = matches[-1]
+    today = datetime.now().strftime("%Y-%m-%d")
+    return _append_fav(today, s)
+
+
+def _append_fav(date: str, story: dict) -> bool:
+    favs = load_favourites()
+    # 避免重複
+    for f in favs:
+        if f["date"] == date and f["genre"] == story["genre"]:
+            return False
+    favs.append({
+        "date":           date,
+        "genre":          story["genre"],
+        "type":           story.get("type", "novel"),
+        "mood":           story.get("mood", ""),
+        "character_name": story["character"]["name"],
+        "saved_at":       datetime.now().isoformat()[:16],
+    })
+    _save_favourites(favs[-20:])  # 最多保留 20 篇
+    return True
+
+
+def handle_fav():
+    """顯示收藏故事列表。"""
+    favs = load_favourites()
+    if not favs:
+        send_telegram("未有收藏故事。讀完故事後，評分時 tap ⭐ 收藏。")
+        return
+    keyboard = []
+    for i, f in enumerate(reversed(favs)):  # 最新在上
+        icon = "📚" if f["type"] == "lit" else "📖"
+        keyboard.append([{
+            "text": f"{icon} {f['genre']}  ·  {f['character_name']}  ({f['date']})",
+            "callback_data": f"favread_{len(favs)-1-i}",
+        }])
+    send_telegram("⭐ 收藏故事（最新在上）：", reply_markup={"inline_keyboard": keyboard})
+
+
+def send_fav_story(fav_idx: int):
+    """重讀收藏故事。"""
+    favs = load_favourites()
+    if fav_idx < 0 or fav_idx >= len(favs):
+        send_telegram("找不到該收藏故事。")
+        return
+    f = favs[fav_idx]
+    filepath = STORIES_DIR / f"{f['date']}.json"
+    if not filepath.exists():
+        send_telegram(f"原始檔案已不存在（{f['date']}）。")
+        return
+    with open(filepath, encoding="utf-8") as fp:
+        stories = json.load(fp)
+    story = next((s for s in stories if s["genre"] == f["genre"]), None)
+    if not story:
+        send_telegram("找不到該故事內容。")
+        return
+    char = story["character"]
+    if story.get("type") == "lit":
+        header = (
+            f"📚 [⭐收藏]  {story['genre']}\n"
+            f"👤 {char['name']} · {char['gender']} · {char['occupation']}\n"
+            f"🎭 {story.get('mood', '')}  ·  {story.get('style', '')}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        )
+    else:
+        ch_tag = "🔥 男頻" if story.get("channel", "M") == "M" else "💕 女頻"
+        header = (
+            f"📖 [⭐收藏]  {story['genre']}\n"
+            f"👤 {char['name']} · {char['gender']} · {char['occupation']}  ｜  {ch_tag}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        )
+    send_telegram(header + story["content"])
+
+
 def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -62,8 +182,9 @@ def register_commands():
         {"command": "more",    "description": "從高分類別加推1篇"},
         {"command": "lit",     "description": "即時生成1篇情感文學故事"},
         {"command": "litlist", "description": "選情緒基調 → 選類別 → 生成"},
+        {"command": "today",   "description": "今日故事目錄"},
+        {"command": "fav",     "description": "收藏故事"},
         {"command": "stats",   "description": "各類別評分統計"},
-        {"command": "menu",    "description": "重讀今日故事目錄"},
         {"command": "history", "description": "瀏覽最近7日故事"},
         {"command": "help",    "description": "指令說明"},
     ]
@@ -112,21 +233,33 @@ def handle_history():
 
 
 def send_story(story_num, stories):
-    from utils import _split_text
     s = stories[story_num - 1]
-    header = (
-        f"📖 [{story_num}/{len(stories)}]  {s['genre']}\n"
-        f"👤 {s['character']['name']} · {s['character']['gender']} · {s['character']['occupation']}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-    )
-    full_text = header + s["content"]
+    story_type = s.get("type", "novel")
+    char = s["character"]
+
+    if story_type == "lit":
+        header = (
+            f"📚 [{story_num}/{len(stories)}]  {s['genre']}\n"
+            f"👤 {char['name']} · {char['gender']} · {char['occupation']}\n"
+            f"🎭 {s.get('mood', '')}  ·  {s.get('style', '')}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        )
+    else:
+        ch = s.get("channel", "M")
+        ch_tag = "🔥 男頻" if ch == "M" else "💕 女頻"
+        header = (
+            f"📖 [{story_num}/{len(stories)}]  {s['genre']}\n"
+            f"👤 {char['name']} · {char['gender']} · {char['occupation']}  ｜  {ch_tag}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        )
+
     rating_keyboard = {"inline_keyboard": [[
         {"text": "😞 差",   "callback_data": f"rate_{story_num}_1"},
         {"text": "😐 一般", "callback_data": f"rate_{story_num}_2"},
         {"text": "😊 好",   "callback_data": f"rate_{story_num}_3"},
         {"text": "🤩 超好", "callback_data": f"rate_{story_num}_4"},
     ]]}
-    send_telegram(full_text, reply_markup=rating_keyboard)
+    send_telegram(header + s["content"], reply_markup=rating_keyboard)
 
 
 # ── 評分與統計 ────────────────────────────────────────────────────
@@ -363,13 +496,24 @@ def handle_callback(cb):
         stories = get_today_stories()
         reply, hot_genre = handle_rating(story_num, score, stories)
         answer_callback(cb["id"], reply)
+        _again_row = [
+            {"text": "🔁 再來爽文",   "callback_data": "again_novel"},
+            {"text": "🔁 再來情感文學", "callback_data": "again_lit"},
+        ]
         if hot_genre:
             send_telegram(
-                f"🔥 高分！幫你加推一篇《{hot_genre}》？",
-                reply_markup={"inline_keyboard": [[
-                    {"text": f"➕ 加推《{hot_genre}》", "callback_data": f"more_{hot_genre}"},
-                    {"text": "不用了", "callback_data": "more_skip"},
-                ]]}
+                f"🤩 《{hot_genre}》超好！",
+                reply_markup={"inline_keyboard": [
+                    [{"text": f"➕ 加推《{hot_genre}》", "callback_data": f"more_{hot_genre}"},
+                     {"text": "⭐ 收藏",                "callback_data": f"fav_{story_num}"}],
+                    _again_row,
+                ]}
+            )
+        else:
+            genre_name = stories[story_num - 1]["genre"] if stories else "?"
+            send_telegram(
+                f"{RATING_LABELS[score]} 《{genre_name}》已記錄",
+                reply_markup={"inline_keyboard": [_again_row]}
             )
 
     elif cb_data.startswith("ratex_"):
@@ -378,13 +522,23 @@ def handle_callback(cb):
         genre_name = parts[2]
         reply, hot_genre = handle_bonus_rating(score, genre_name)
         answer_callback(cb["id"], reply)
+        _again_row = [
+            {"text": "🔁 再來爽文",   "callback_data": "again_novel"},
+            {"text": "🔁 再來情感文學", "callback_data": "again_lit"},
+        ]
         if hot_genre:
             send_telegram(
-                f"🔥 高分！幫你再推一篇《{hot_genre}》？",
-                reply_markup={"inline_keyboard": [[
-                    {"text": f"➕ 加推《{hot_genre}》", "callback_data": f"more_{hot_genre}"},
-                    {"text": "不用了", "callback_data": "more_skip"},
-                ]]}
+                f"🤩 《{hot_genre}》超好！",
+                reply_markup={"inline_keyboard": [
+                    [{"text": f"➕ 加推《{hot_genre}》", "callback_data": f"more_{hot_genre}"},
+                     {"text": "⭐ 收藏",                "callback_data": f"favx_{genre_name}"}],
+                    _again_row,
+                ]}
+            )
+        else:
+            send_telegram(
+                f"{RATING_LABELS[score]} 《{genre_name}》已記錄",
+                reply_markup={"inline_keyboard": [_again_row]}
             )
 
     elif cb_data.startswith("hist_"):
@@ -416,6 +570,29 @@ def handle_callback(cb):
         answer_callback(cb["id"], f"生成《{genre_name}》中...")
         threading.Thread(target=_run_generate_lit, args=(genre_name,), daemon=True).start()
 
+    elif cb_data == "again_novel":
+        answer_callback(cb["id"], "再來一篇...")
+        threading.Thread(target=_run_generate_one, args=(None, ""), daemon=True).start()
+
+    elif cb_data == "again_lit":
+        answer_callback(cb["id"], "再來情感文學...")
+        threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
+
+    elif cb_data.startswith("fav_"):
+        story_num = int(cb_data[4:])
+        ok = add_favourite_by_num(story_num)
+        answer_callback(cb["id"], "⭐ 已收藏！" if ok else "已收藏過了")
+
+    elif cb_data.startswith("favx_"):
+        genre_name = cb_data[5:]
+        ok = add_favourite_by_genre(genre_name)
+        answer_callback(cb["id"], "⭐ 已收藏！" if ok else "已收藏過了")
+
+    elif cb_data.startswith("favread_"):
+        fav_idx = int(cb_data[8:])
+        answer_callback(cb["id"], "載入收藏故事...")
+        send_fav_story(fav_idx)
+
     elif cb_data.startswith("more_"):
         genre_name = cb_data[5:]
         if genre_name == "skip":
@@ -428,6 +605,8 @@ def handle_callback(cb):
 # ── 生成執行緒 ────────────────────────────────────────────────────
 
 def _run_generate_one(genre_name=None, label=""):
+    stop = threading.Event()
+    threading.Thread(target=_typing_loop, args=(stop,), daemon=True).start()
     try:
         from novel_generator import generate_and_send_one
         generate_and_send_one(genre_name, label=label)
@@ -435,9 +614,13 @@ def _run_generate_one(genre_name=None, label=""):
         import traceback
         print(f"[_run_generate_one] 錯誤：{traceback.format_exc()}")
         send_telegram("⚠️ 故事生成失敗，請稍後再試（/now 重新生成）")
+    finally:
+        stop.set()
 
 
 def _run_generate_lit(genre_name=None):
+    stop = threading.Event()
+    threading.Thread(target=_typing_loop, args=(stop,), daemon=True).start()
     try:
         from lit_generator import generate_and_send_lit
         generate_and_send_lit(genre_name)
@@ -445,6 +628,8 @@ def _run_generate_lit(genre_name=None):
         import traceback
         print(f"[_run_generate_lit] 錯誤：{traceback.format_exc()}")
         send_telegram("⚠️ 情感文學生成失敗，請稍後再試（/lit 重新生成）")
+    finally:
+        stop.set()
 
 
 # ── 文字指令處理 ──────────────────────────────────────────────────
@@ -466,10 +651,11 @@ def handle_message(text):
             "📚 情感文學模式\n"
             "/lit — 即時生成1篇情感文學故事\n"
             "/litlist — 選情緒基調 → 選類別 → 生成\n\n"
-            "⚙️ 其他\n"
-            "/stats — 各類別評分統計\n"
-            "/menu — 重讀今日故事目錄\n"
-            "/history — 瀏覽最近7日故事\n\n"
+            "📋 故事管理\n"
+            "/today — 今日故事目錄\n"
+            "/fav — 收藏故事\n"
+            "/history — 瀏覽最近7日故事\n"
+            "/stats — 各類別評分統計\n\n"
             "💡 打 / 可快速呼出所有指令"
         )
         return
@@ -498,11 +684,15 @@ def handle_message(text):
         handle_stats()
         return
 
-    if cmd(text, "/menu"):
+    if cmd(text, "/today") or cmd(text, "/menu"):
         if stories:
             send_toc_menu(stories)
         else:
-            send_telegram("未有故事，用 /now 即時生成或 /list 選類別。")
+            send_telegram("今日未有故事，用 /now 或 /lit 即時生成。")
+        return
+
+    if cmd(text, "/fav"):
+        handle_fav()
         return
 
     if cmd(text, "/history"):

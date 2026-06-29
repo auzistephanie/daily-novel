@@ -233,12 +233,30 @@ def fetch_trending_topics(channel: str = "M") -> str:
         return ""
 
 
+def save_story_to_disk(story: dict) -> None:
+    """將故事追加到今日故事檔案（stories/YYYY-MM-DD.json）。"""
+    from datetime import datetime
+    stories_dir = BASE_DIR / "stories"
+    stories_dir.mkdir(exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    filepath = stories_dir / f"{today}.json"
+    if filepath.exists():
+        with open(filepath, encoding="utf-8") as f:
+            stories = _json.load(f)
+    else:
+        stories = []
+    stories.append(story)
+    filepath.write_text(_json.dumps(stories, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[save_story_to_disk] 已存 {today}.json，共 {len(stories)} 篇")
+
+
 def send_toc_menu(stories_data: list) -> None:
-    """發送今日故事目錄（可點擊的 inline keyboard）。"""
+    """發送今日故事目錄（可點擊的 inline keyboard）。📖=爽文 📚=情感文學"""
     keyboard = []
     for i, s in enumerate(stories_data, 1):
+        icon = "📚" if s.get("type") == "lit" else "📖"
         keyboard.append([{
-            "text": f"{i}.  {s['genre']}  ·  {s['character']['name']}",
+            "text": f"{icon} {i}.  {s['genre']}  ·  {s['character']['name']}",
             "callback_data": f"story_{i}"
         }])
     send_telegram(

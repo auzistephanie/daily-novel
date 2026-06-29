@@ -759,6 +759,19 @@ def generate_and_send_one(genre_name=None, label="📖"):
     except Exception as e:
         print(f"[generate_and_send_one] save_story_dna 失敗（非致命）：{e}")
 
+    # 存盤到今日故事檔案，供 /menu 重讀
+    try:
+        from utils import save_story_to_disk
+        save_story_to_disk({
+            "type": "novel",
+            "genre": genre["name"],
+            "channel": genre.get("channel", "M"),
+            "character": character,
+            "content": content,
+        })
+    except Exception as e:
+        print(f"[generate_and_send_one] save_story_to_disk 失敗（非致命）：{e}")
+
     _header_label = f"  {label}" if label else ""
     _ch = genre.get("channel", "M")
     _ch_tag = "🔥 男頻" if _ch == "M" else "💕 女頻"
