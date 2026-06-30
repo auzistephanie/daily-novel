@@ -221,6 +221,49 @@ FEMALE_OPENING_HOOKS = [
     "男主帶著新歡回家逼女主讓位，她笑著遞上早已備好的離婚協議",
 ]
 
+# ── 主角個人傷口（令讀者入戲的情感細節）──────────────────────────────
+# 不是「很慘」的標籤，是一個讀者說「我明白那種感覺」的具體時刻
+MALE_WOUNDS = [
+    "第一次被人當眾羞辱時，他環顧四周，沒有一個人跟他對視——他記住了每一張臉",
+    "有一年他真的撐不住，幾乎開口說「我需要幫忙」，但對方的電話在他說出口前就掛了",
+    "他存了三年的錢被最信任的人「借走」，對方到現在還覺得他不應該介意",
+    "他做過最憋屈的事，是替人背了一個鍋，沉默受了委屈，因為他知道解釋沒有用",
+    "最孤獨的那段日子，不是沒有人在身邊，是在一群人中間發現沒有人真的看見他",
+    "他有一次努力到幾乎成了，把消息告訴他以為最在乎他的人——對方說「你這個也行啊」",
+    "習慣什麼都一個人扛，不是天性，是因為有一次他說了「我很累」，對方說「誰不累」",
+    "最難過那天他一個人坐了很久，翻了通訊錄，找不到一個可以打電話的人",
+    "他被人誣陷時拿出了所有證據，沒有一個人願意看，他從此明白：清白要靠自己掙",
+    "第一次感覺到世界不公平，不是因為輸了，而是因為他發現那個贏的人根本不值得贏",
+]
+
+FEMALE_WOUNDS = [
+    "她發現背叛的那天，哭都沒有哭——不是不難過，是突然意識到，她一個人哭慣了",
+    "她說過一句「我需要你」，那個人把這句話用了很多次，每次都是要挾她的籌碼",
+    "最累那段時間，她習慣把門關好才讓自己難過，怕被人看見，也怕讓人覺得麻煩",
+    "她替每個人算盡了後路，唯獨那一次沒算到自己——那次讓她付出了最大的代價",
+    "最孤獨的不是一個人，而是哭著發了消息，對方說「你想太多了」",
+    "有一段時間她每天假裝很好，因為她清楚：如果她垮了，沒有人撐得住那個局面",
+    "她不是不懂得愛，是有一次全心全意給了出去，換回來的是「你太黏了」",
+    "家裡最懂她的人早就不在了，所以她學會了不讓人懂她——懂了才知道怎麼傷她",
+    "她做的那些犧牲，沒有一個人記得，但她一旦有一次沒做到，所有人都記得很清楚",
+    "最難過的不是被背叛，是她發現自己早就知道，只是不願意相信——浪費了太多時間",
+]
+
+# ── 意外反轉種子（打破「羞辱→忍→爆→勝」固定節奏，令讀者真正意外）────
+# 每篇必選一個，在最意想不到的時機自然呈現
+TWIST_SEEDS = [
+    "主角在最高潮勝利的那一刻，沒有任何嘲諷，沒有任何表情——只是轉身走了。這個沉默比任何言語都更讓人窒息。",
+    "打臉的那句話，不是主角親口說的——是一個反派從未放在眼裡的人站出來說了，而主角只是站在旁邊，什麼都沒有說。",
+    "讀者以為最大的反派是某個人，但到最後才發現，真正讓主角傷得最深的，是一個故事裡幾乎沒出現過的人。",
+    "主角贏了之後，做的第一件事不是任何人預料到的——那個選擇讓讀者重新理解了這個人到底在乎什麼。",
+    "反派在最後做了一件出人意料的事——不是悔改，但也不是繼續作惡——讓讀者對他/她的判斷變得複雜，沒有辦法純粹恨。",
+    "故事裡有一個看似多餘的人（侍應、路人、沉默的同事）。最後整個結局的關鍵，是因為這個人的一個微小選擇。",
+    "主角最強的那張牌，從頭到尾都沒有出過。他/她用次一等的牌贏了——讀者才意識到，主角的格局遠不止如此。",
+    "讀者以為主角已經原諒了某件事，或者忘了——但最後一個細節證明他/她從來沒有忘記，只是選擇了不說，因為不需要。",
+    "主角勝利之後沉默了很長時間，不是後悔，是突然明白了一件事——比勝利本身更重要的東西，在這個過程中悄悄改變了。",
+    "反派費盡心思設的局，最後被一個完全不相關的巧合打破——但仔細看，那個「巧合」其實是主角三年前種下的一粒種子。",
+]
+
 # ── 主角生成 ──────────────────────────────────────────────────────
 
 # 年代文專用名字索引（在 MALE_FIRST / FEMALE_FIRST 中的年代名區段）
@@ -243,10 +286,12 @@ def generate_character(channel="M", genre_name=""):
         gender = "女" if random.random() < 0.9 else "男"
         occupation = random.choice(FEMALE_OCCUPATIONS)
         personality = random.choice(FEMALE_PERSONALITIES)
+        wound = random.choice(FEMALE_WOUNDS)
     else:
         gender = random.choice(["男", "女"])
         occupation = random.choice(OCCUPATIONS)
         personality = random.choice(PERSONALITIES)
+        wound = random.choice(MALE_WOUNDS)
 
     # 判斷題材風格，選取對應名字池
     is_era = "年代" in genre_name      # 重生年代稱霸
@@ -278,6 +323,7 @@ def generate_character(channel="M", genre_name=""):
         "gender": gender,
         "occupation": occupation,
         "personality": personality,
+        "wound": wound,
     }
 
 
@@ -479,6 +525,7 @@ def _pick_unique_elements(genre_name=""):
         "structure":      pick_fresh(NARRATIVE_STRUCTURES, "structure"),
         "writing_style":  pick_fresh(WRITING_STYLES,       "writing_style"),
         "ending":         pick_fresh(ENDING_STRUCTURES,    "ending"),
+        "twist_seed":     pick_fresh(TWIST_SEEDS,          "twist_seed"),
     }
 
     # 更新 recent 記錄（sliding window）
@@ -543,6 +590,15 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, 
 ⑥ 情感核心（讀者帶走什麼感受）
    {unique['emotional_core']}
 
+⑦ 主角的個人傷口（讓讀者真正心疼的那一刻）
+   {character['wound']}
+   → 開場前三分之一自然埋入這個細節，不需要旁白解釋，讓讀者感受到就夠了
+   → 這個細節要讓讀者說「我明白那種感覺」——共鳴比同情更重要
+
+⑧ 本篇意外反轉種子（打破讀者預期的關鍵時刻）
+   {unique['twist_seed']}
+   → 在最意想不到的時機植入，不要提前預告，要讓讀者真的沒料到
+
 ══════════════════════════════════
 第二步：按以下設定寫正文
 ══════════════════════════════════
@@ -550,6 +606,7 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, 
 【本篇設定】
 類型：{genre['name']} — {genre['desc']}
 主角：{character['name']}（{character['gender']}／{character['occupation']}／{character['personality']}）
+個人傷口：{character['wound']}
 反派原型：{villain}
 開場情境：{opening}
 故事舞台：{unique['setting']}
@@ -561,8 +618,13 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, 
 {unique['writing_style']}
 → 這是本篇的語感基調，從第一句到最後一句都要符合這個風格
 
+【意外反轉種子——必須在故事中自然呈現】
+{unique['twist_seed']}
+→ 這是本篇讓讀者真正意外的關鍵。不要提前預告，不要旁白解釋，讓它自然發生。
+
 【寫作標準——每一條都是硬指標】
 ・開場第一段必須有鉤子，讀者看完想繼續讀
+・主角的個人傷口要在前三分之一自然帶出——一個動作、一句話、一個細節就夠，不需要長篇說明
 ・反轉必須有因果：反派怎麼輸，要和他怎麼作惡相對應
 ・具體 > 籠統：「這份合約價值2.3億」比「一大筆錢」強十倍
 ・每個場景必須同時推進劇情和角色，沒有廢筆
@@ -631,6 +693,15 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 ⑥ 情感核心（讀者帶走什麼感受）
    {unique['emotional_core']}
 
+⑦ 女主的個人傷口（讓讀者真正心疼的那一刻）
+   {character['wound']}
+   → 開場前三分之一自然埋入，一個動作或一句話就夠，不需要旁白解釋
+   → 讓讀者說「我明白那種感覺」——這才是共鳴，不是悲慘
+
+⑧ 本篇意外反轉種子（打破讀者預期的關鍵時刻）
+   {unique['twist_seed']}
+   → 在最意想不到的時機植入，讓讀者真的沒料到，不要提前預告
+
 ══════════════════════════════════
 第二步：按以下設定寫正文
 ══════════════════════════════════
@@ -638,6 +709,7 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 【本篇設定】
 類型：{genre['name']} — {genre['desc']}
 女主：{character['name']}（{character['gender']}／{character['occupation']}／{character['personality']}）
+個人傷口：{character['wound']}
 反派原型：{villain}
 開場情境：{opening}
 故事舞台：{unique['setting']}
@@ -649,6 +721,10 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 {unique['writing_style']}
 → 這是本篇的語感基調，從第一句到最後一句都要符合這個風格
 
+【意外反轉種子——必須在故事中自然呈現】
+{unique['twist_seed']}
+→ 這是本篇讓讀者真正意外的關鍵。不要提前預告，不要旁白解釋，讓它自然發生。
+
 【女頻三幕結構——必須清晰】
 第一幕「虐」：反派當眾踐踏女主，越具體越讓讀者心疼，要讓讀者真的恨
 第二幕「轉」：女主決絕抽身，亮出底牌，全場震驚——轉折要出人意料，不能公式化
@@ -656,6 +732,7 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 
 【寫作標準——每一條都是硬指標】
 ・開場第一段必須帶撕裂感，讓讀者立刻心疼女主
+・女主的個人傷口要在前三分之一自然帶出——一個細節、一個動作就夠，不要長篇說明
 ・反轉必須和「虐」的方式形成諷刺呼應，有因果感
 ・女主的強，要靠行動和對白體現，不靠旁白告訴讀者她很強
 ・具體 > 籠統：「她是顧氏旗下三家上市公司的實際掌舵人」比「她很厲害」強十倍
