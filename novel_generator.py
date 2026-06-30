@@ -249,6 +249,21 @@ FEMALE_WOUNDS = [
     "最難過的不是被背叛，是她發現自己早就知道，只是不願意相信——浪費了太多時間",
 ]
 
+# ── 反派動機種子（令反派立體，越理解其邏輯越恨他）──────────────────────
+# 反派有「可以理解但錯誤」的動機，比純壞人更讓讀者恨
+VILLAIN_MOTIVATIONS = [
+    "他從小被人踩低，第一次有了權力，就把所有的委屈加倍還給眼前的人——他只是不懂得把出氣對象選對",
+    "他以為這個世界本來就是強者踩弱者，他只是在做每個有能力的人都在做的事——他的錯誤是遇上了主角",
+    "他嫉妒主角，但他不承認，他把嫉妒包裝成蔑視，把打壓叫做「規矩」，說服自己出手是有道理的",
+    "他有一個他在乎的人——父母、伴侶、或昔日恩人——他所有的惡都是為了那個人，只是手段選錯了",
+    "他本來不壞，但有一次他手軟，被人踩過，從此他決定永遠不再手軟，哪怕眼前這個人根本無辜",
+    "他代表的不只是他自己，他身後有一套他從未質疑過的「規則」：出身決定位置，弱者活該被淘汰",
+    "他對主角並無深仇，只是主角擋了他的路，而他習慣了掃掉擋路的人——主角是倒楣的那一個",
+    "他做的每一件壞事都有一個「合理」的解釋，他從未覺得自己有錯——這才是最讓人寒心的地方",
+    "他曾經和主角處境相同，但他選擇了向強者妥協、踩低更弱的人，他恨主角是因為主角選了他沒選的路",
+    "他知道自己在做什麼，他不在乎，因為他從來沒有為這種事付過代價——直到遇上主角",
+]
+
 # ── 意外反轉種子（打破「羞辱→忍→爆→勝」固定節奏，令讀者真正意外）────
 # 每篇必選一個，在最意想不到的時機自然呈現
 TWIST_SEEDS = [
@@ -448,6 +463,21 @@ WRITING_STYLES = [
     "多線蒙太奇風：在兩三個場景間快速切換，用電影剪接式節奏製造張力，讓讀者在拼圖過程中獲得成就感，最後一刻所有線索交匯",
 ]
 
+# ── 懸念鉤子（令讀者在中段忍不住繼續看的關鍵時刻）────────────────────
+# 植入故事中段（前半結束前），製造「必須睇完」的張力
+SUSPENSE_HOOKS = [
+    "主角做了一個動作，讀者看到，但場景裡沒有人看到——這個「秘密」讓讀者忍不住替主角緊張",
+    "反派在某個關鍵時刻突然停下來，表情變了——他發現了什麼，但沒有說出來，讀者和主角都不知道他知道了什麼",
+    "一個本來不重要的細節（一個名字、一份文件、一個眼神）在中段突然變得意味深長，讀者回頭想第一幕",
+    "主角的計劃在中段遇上一個意外的變數——不是反派的計謀，是一個誰都沒料到的第三方",
+    "故事進行到一半，主角說了一句話，讀者意識到他/她早就知道結局——但為什麼還要走這一步？",
+    "反派在中段做了一件「好事」，讓讀者的情緒突然複雜起來，不確定接下來要怎麼想",
+    "中段出現一個新角色，三言兩語就讓讀者感覺到：這個人的出現，會改變一切",
+    "主角在勝利前夕，有一個短暫的猶豫——不是害怕，是想到了什麼，但沒有解釋，讀者帶著這個疑問看完後半",
+    "反派的「最後底牌」在中段意外暴露——但主角的反應讓讀者意識到，這張牌根本打不中",
+    "中段有一句話，第一次看以為是閒筆，看完全篇才明白，那句話是整個故事最重要的一句",
+]
+
 # 結局結構（明確收尾節奏，杜絕草率結束）
 ENDING_STRUCTURES = [
     "回響呼應型：結尾主動呼應開場某個具體細節（一句話、一個動作、一件物品），讓讀者恍然大悟「原來早有伏筆」，合上手機還在回味",
@@ -516,16 +546,18 @@ def _pick_unique_elements(genre_name=""):
         return random.choice(fresh)
 
     unique = {
-        "setting":        pick_fresh(ANCIENT_SETTINGS if is_ancient else STORY_SETTINGS, "setting"),
-        "irony":          pick_fresh(IRONY_STRUCTURES,     "irony"),
-        "trump_card":     pick_fresh(ANCIENT_TRUMP_CARDS if is_ancient else TRUMP_CARDS, "trump_card"),
-        "villain_flaw":   pick_fresh(VILLAIN_FLAWS,        "villain_flaw"),
-        "emotional_core": pick_fresh(EMOTIONAL_CORES,      "emotional_core"),
-        "memorable":      pick_fresh(MEMORABLE_DETAILS,    "memorable"),
-        "structure":      pick_fresh(NARRATIVE_STRUCTURES, "structure"),
-        "writing_style":  pick_fresh(WRITING_STYLES,       "writing_style"),
-        "ending":         pick_fresh(ENDING_STRUCTURES,    "ending"),
-        "twist_seed":     pick_fresh(TWIST_SEEDS,          "twist_seed"),
+        "setting":            pick_fresh(ANCIENT_SETTINGS if is_ancient else STORY_SETTINGS, "setting"),
+        "irony":              pick_fresh(IRONY_STRUCTURES,       "irony"),
+        "trump_card":         pick_fresh(ANCIENT_TRUMP_CARDS if is_ancient else TRUMP_CARDS, "trump_card"),
+        "villain_flaw":       pick_fresh(VILLAIN_FLAWS,          "villain_flaw"),
+        "villain_motivation": pick_fresh(VILLAIN_MOTIVATIONS,    "villain_motivation"),
+        "emotional_core":     pick_fresh(EMOTIONAL_CORES,        "emotional_core"),
+        "memorable":          pick_fresh(MEMORABLE_DETAILS,      "memorable"),
+        "structure":          pick_fresh(NARRATIVE_STRUCTURES,   "structure"),
+        "writing_style":      pick_fresh(WRITING_STYLES,         "writing_style"),
+        "ending":             pick_fresh(ENDING_STRUCTURES,      "ending"),
+        "twist_seed":         pick_fresh(TWIST_SEEDS,            "twist_seed"),
+        "suspense_hook":      pick_fresh(SUSPENSE_HOOKS,         "suspense_hook"),
     }
 
     # 更新 recent 記錄（sliding window）
@@ -579,25 +611,30 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, 
    要夠具體，有震撼力，和場景有機結合。
    參考方向：{unique['trump_card']}
 
-④ 反派命門設計
+④ 反派設計（命門 + 動機）
    反派為何必敗？要有邏輯，不能只是「主角強」。
-   參考：{unique['villain_flaw']}
+   命門參考：{unique['villain_flaw']}
+   動機參考：{unique['villain_motivation']}
+   → 反派要「可以理解但做錯了」——讀者越理解他的邏輯，越恨他的選擇，打臉才更有力
 
-⑤ 點睛之筆（令故事有靈魂）
+⑤ 懸念鉤子（讓讀者在中段放不下手機）
+   在故事前半結束前植入：{unique['suspense_hook']}
+   → 這個時刻要讓讀者產生「一定要看完」的感覺，不能提前解答
+
+⑦ 點睛之筆（令故事有靈魂）
    在開場埋下一個細節，結尾賦予它完全不同的意義。
    參考：{unique['memorable']}
 
-⑥ 情感核心（讀者帶走什麼感受）
+⑧ 情感核心（讀者帶走什麼感受）
    {unique['emotional_core']}
 
-⑦ 主角的個人傷口（讓讀者真正心疼的那一刻）
+⑨ 主角的個人傷口（讓讀者真正心疼的那一刻）
    {character['wound']}
-   → 開場前三分之一自然埋入這個細節，不需要旁白解釋，讓讀者感受到就夠了
-   → 這個細節要讓讀者說「我明白那種感覺」——共鳴比同情更重要
+   → 開場前三分之一自然埋入，不需要旁白解釋，一個動作或細節就夠
 
-⑧ 本篇意外反轉種子（打破讀者預期的關鍵時刻）
+⑩ 本篇意外反轉種子
    {unique['twist_seed']}
-   → 在最意想不到的時機植入，不要提前預告，要讓讀者真的沒料到
+   → 在最意想不到的時機植入，不要提前預告
 
 ══════════════════════════════════
 第二步：按以下設定寫正文
@@ -618,18 +655,26 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, 
 {unique['writing_style']}
 → 這是本篇的語感基調，從第一句到最後一句都要符合這個風格
 
-【意外反轉種子——必須在故事中自然呈現】
+【反派動機——讓讀者理解但更恨他】
+{unique['villain_motivation']}
+→ 反派不能只是「壞」，要讓讀者看懂他為何這樣做，然後更恨他選錯了方式
+
+【懸念鉤子——讓讀者在中段放不下】
+{unique['suspense_hook']}
+→ 在故事前半結束前自然植入，製造「必須看完」的張力，不能提前解答
+
+【意外反轉種子——打破讀者預期】
 {unique['twist_seed']}
-→ 這是本篇讓讀者真正意外的關鍵。不要提前預告，不要旁白解釋，讓它自然發生。
+→ 在最意想不到的時機呈現，不要提前預告，讓它自然發生
 
 【寫作標準——每一條都是硬指標】
 ・開場第一段必須有鉤子，讀者看完想繼續讀
-・主角的個人傷口要在前三分之一自然帶出——一個動作、一句話、一個細節就夠，不需要長篇說明
+・主角的個人傷口要在前三分之一自然帶出——一個動作、一句話就夠
+・反派要有動機，讓讀者理解但更恨他的選擇
 ・反轉必須有因果：反派怎麼輸，要和他怎麼作惡相對應
 ・具體 > 籠統：「這份合約價值2.3億」比「一大筆錢」強十倍
 ・每個場景必須同時推進劇情和角色，沒有廢筆
 ・對白要有性格：主角說話的方式要和反派截然不同
-・反派要壞得讓讀者恨，但不能蠢得讓讀者覺得不合理
 
 【三翻四抖節奏】
 三次反轉（每次比上次更震撼）+ 四個高潮時刻（讀者忍不住截圖分享的那種）
@@ -686,19 +731,27 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
    她靠什麼贏？要夠具體，和情節有機結合，不能只是「亮出身份」。
    參考：{unique['trump_card']}
 
-⑤ 點睛之筆（令故事有靈魂）
+⑤ 反派動機設計（讓讀者理解但更恨他）
+   {unique['villain_motivation']}
+   → 反派不能只是壞，要讓讀者看懂他為何這樣做，然後更恨他選錯了方式
+
+⑥ 懸念鉤子（讓讀者中段放不下）
+   {unique['suspense_hook']}
+   → 在故事前半結束前自然植入，不能提前解答，要讓讀者帶著這個疑問看完後半
+
+⑦ 點睛之筆（令故事有靈魂）
    在開場埋一個細節，結尾時賦予它完全不同的意義。
    參考：{unique['memorable']}
 
-⑥ 情感核心（讀者帶走什麼感受）
+⑧ 情感核心（讀者帶走什麼感受）
    {unique['emotional_core']}
 
-⑦ 女主的個人傷口（讓讀者真正心疼的那一刻）
+⑨ 女主的個人傷口（讓讀者真正心疼的那一刻）
    {character['wound']}
    → 開場前三分之一自然埋入，一個動作或一句話就夠，不需要旁白解釋
    → 讓讀者說「我明白那種感覺」——這才是共鳴，不是悲慘
 
-⑧ 本篇意外反轉種子（打破讀者預期的關鍵時刻）
+⑩ 本篇意外反轉種子（打破讀者預期的關鍵時刻）
    {unique['twist_seed']}
    → 在最意想不到的時機植入，讓讀者真的沒料到，不要提前預告
 
@@ -721,9 +774,17 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 {unique['writing_style']}
 → 這是本篇的語感基調，從第一句到最後一句都要符合這個風格
 
-【意外反轉種子——必須在故事中自然呈現】
+【反派動機——讓讀者理解但更恨她】
+{unique['villain_motivation']}
+→ 反派有動機，讀者越懂她的邏輯，越恨她選錯了路
+
+【懸念鉤子——讓讀者中段放不下】
+{unique['suspense_hook']}
+→ 在故事前半結束前植入，不能提前解答
+
+【意外反轉種子——打破讀者預期】
 {unique['twist_seed']}
-→ 這是本篇讓讀者真正意外的關鍵。不要提前預告，不要旁白解釋，讓它自然發生。
+→ 不要提前預告，讓它自然發生，在最意想不到的時機
 
 【女頻三幕結構——必須清晰】
 第一幕「虐」：反派當眾踐踏女主，越具體越讓讀者心疼，要讓讀者真的恨
@@ -733,6 +794,7 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 【寫作標準——每一條都是硬指標】
 ・開場第一段必須帶撕裂感，讓讀者立刻心疼女主
 ・女主的個人傷口要在前三分之一自然帶出——一個細節、一個動作就夠，不要長篇說明
+・反派要有動機，讓讀者理解但更恨她，不能只是純惡人
 ・反轉必須和「虐」的方式形成諷刺呼應，有因果感
 ・女主的強，要靠行動和對白體現，不靠旁白告訴讀者她很強
 ・具體 > 籠統：「她是顧氏旗下三家上市公司的實際掌舵人」比「她很厲害」強十倍
@@ -782,8 +844,12 @@ def generate_story(genre, character, max_retries: int = 3):
 【⭐ 上次此類型獲最高評分的成功 DNA（參考結構，創作全新故事）】
 諷刺結構：{ref.get('irony', '')}
 主角王牌：{ref.get('trump_card', '')}
+反派動機：{ref.get('villain_motivation', '')}
 敘事結構：{ref.get('structure', '')}
+寫作風格：{ref.get('writing_style', '')}
 情感核心：{ref.get('emotional_core', '')}
+反轉種子：{ref.get('twist_seed', '')}
+結局方式：{ref.get('ending', '')}
 → 這套 DNA 組合曾讓讀者非常滿意，沿用相近的張力結構，但場景和人物必須全新"""
         else:
             # 舊版兼容

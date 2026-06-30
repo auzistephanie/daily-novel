@@ -286,7 +286,9 @@ def record_cooldown(dna: dict):
         recent = load_recent_dna()
         COOLDOWN_WINDOW = 12  # 比正常 window(5) 大，強制更長冷卻
         for key in ["setting", "irony", "trump_card", "villain_flaw",
-                    "emotional_core", "memorable", "structure"]:
+                    "villain_motivation", "emotional_core", "memorable",
+                    "structure", "writing_style", "ending", "twist_seed",
+                    "suspense_hook"]:
             val = dna.get(key, "")
             if not val:
                 continue
@@ -373,7 +375,8 @@ def handle_stats():
     dna_tallies: dict[str, dict[str, int]] = {}
     for genre_winners in winners.values():
         for w in genre_winners:
-            for key in ["irony", "structure", "emotional_core", "trump_card"]:
+            for key in ["irony", "structure", "emotional_core", "trump_card",
+                        "twist_seed", "villain_motivation", "suspense_hook"]:
                 val = w.get(key, "")
                 if val:
                     short = val[:24] + "…" if len(val) > 24 else val
@@ -383,10 +386,13 @@ def handle_stats():
     if dna_tallies:
         lines.append("\n\n🧬 你最鍾意的故事元素（高分故事統計）\n")
         labels = {
-            "irony":          "諷刺結構",
-            "structure":      "敘事結構",
-            "emotional_core": "情感核心",
-            "trump_card":     "主角王牌",
+            "irony":               "諷刺結構",
+            "structure":           "敘事結構",
+            "emotional_core":      "情感核心",
+            "trump_card":          "主角王牌",
+            "twist_seed":          "意外反轉",
+            "villain_motivation":  "反派動機",
+            "suspense_hook":       "懸念鉤子",
         }
         for key, label in labels.items():
             if key not in dna_tallies:
