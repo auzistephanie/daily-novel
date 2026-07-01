@@ -613,6 +613,16 @@ HOOK_DENSITY_RULE = """【鉤子密度 — 短劇節奏硬指標】
 每 200-300 字必須有一個「鉤」：一個情緒點、一個小反轉、一個新資訊、或一句令人想睇落去的懸念。
 唔可以有連續兩三段都係平鋪直敘嘅過場。讀者喺手機碌，任何一段悶咗就會走——每一段都要有理由睇落下一段。"""
 
+# ── 語言與描寫規範（Phase 4：質量修正）─────────────────────────────
+# 呢啲係「故事內文」規範：內文一律標準書面中文，唔好夾雜廣東話、唔好用真實品牌名。
+STYLE_RULES = """【語言與描寫規範——硬性要求，違反即不合格】
+· 全文（包括對白）一律用標準書面中文（普通話白話文）。嚴禁出現任何粵語口語字詞，
+  例如「喺、嘅、咗、佢、睇、嗰、乜、乜嘢、點解、唔、係咪、噉、畀、返、埋、啦、㗎、喎」等，一個都不能有。
+· 不得使用任何真實品牌名稱（例如 Chanel、愛馬仕、勞力士、百達翡麗、匯豐、保時捷、LV 等一律禁止）；
+  需要時改用泛稱（「一隻名貴腕錶」「一個高級手袋」「一輛豪華跑車」）或自創的虛構品牌名。
+· 配角姓名必須原創、有辨識度，避免套路化爛大街的名字（如陸景深、沈曼、顧沉舟 之類）。
+  同一篇或同一系列內，所有角色姓名從頭到尾保持一致，不得中途改名、換人或張冠李戴。"""
+
 
 def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, trending_hint=""):
     _trend = (
@@ -685,6 +695,8 @@ def _build_male_prompt(genre, character, villain, opening, winner_hint, unique, 
 → 這是本篇的語感基調，從第一句到最後一句都要符合這個風格
 
 {HOOK_DENSITY_RULE}
+
+{STYLE_RULES}
 
 【反派動機——讓讀者理解但更恨他】
 {unique['villain_motivation']}
@@ -806,6 +818,8 @@ def _build_female_prompt(genre, character, villain, opening, winner_hint, unique
 → 這是本篇的語感基調，從第一句到最後一句都要符合這個風格
 
 {HOOK_DENSITY_RULE}
+
+{STYLE_RULES}
 
 【反派動機——讓讀者理解但更恨她】
 {unique['villain_motivation']}
@@ -1050,7 +1064,14 @@ def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
         recap = ""
     else:
         _lc = series.get("last_choice", "")
-        recap = f"\n【上集懸念（本集開場須接住並回應）】\n{series.get('next_hook', '')}\n"
+        _eps = series.get("episodes", [])
+        _prev_tail = _eps[-1]["content"][-700:] if _eps else ""
+        recap = (
+            "\n【前情提要（上一集結尾，本集要無縫接住）】\n"
+            f"…{_prev_tail}\n"
+            "→ 上面出現過嘅所有角色姓名，本集必須沿用，一字不改，不得換人或改名。\n"
+            f"\n【上集懸念（本集開場須接住並回應）】\n{series.get('next_hook', '')}\n"
+        )
         if _lc:
             recap += f"【讀者親自選擇了：「{_lc}」】本集必須順住呢個選擇發展，唔可以走返轉頭，要讓讀者覺得「係我嘅決定改寫咗劇情」。\n"
 
@@ -1114,6 +1135,8 @@ def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
 ・對白帶性格與潛台詞，主角同反派講嘢方式截然不同
 ・主角／女主嘅強靠行動同對白體現，唔靠旁白話讀者知
 
+{STYLE_RULES}
+
 字數：{word_rule} ｜ 繁體中文 ｜ 直接開始寫：
 {_trend}"""
 
@@ -1138,6 +1161,8 @@ def _parse_episode(raw):
     clean = _re.sub(r"[<>]{2,}", "", clean)
     # 清走開頭殘留嘅「# 第N集」markdown 標題行（header 已顯示集數）
     clean = _re.sub(r"^\s*#{0,3}\s*第[0-9一二三四五六七八九十]+集\s*\n+", "", clean.lstrip())
+    # 清走開頭「標題：」/「標題:」前綴標籤（保留標題文字本身）
+    clean = _re.sub(r"^\s*標題\s*[:：]\s*", "", clean.lstrip())
     return clean.strip(), next_hook, choice_a, choice_b, ended
 
 
