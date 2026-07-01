@@ -16,6 +16,7 @@ _vstate*.json
 _vsid*.txt
 _p2*
 _q*
+_e2*
 _coh*
 trending_cache.json
 .error_check_state
