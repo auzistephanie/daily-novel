@@ -1257,12 +1257,20 @@ def _generate_and_send_episode(series, ep_num):
         f"👤 {series['character']['name']} ｜ {ch_tag} ｜ {series['arc_name']}\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
     )
+    _gn = series["genre"]
+    # 「換過個」出口：睇完唔啱可以即刻轉新故事（唔追本身就係負評訊號，留存數據會扣低此題材）
+    _switch_btn = {"text": "🎲 換個新故事", "callback_data": "newseries"}
+    _fav_btn = {"text": "⭐ 收藏", "callback_data": f"favx_{_gn}"}
     if is_done:
-        footer = "\n\n━━━━━━━━━━\n🎬 本系列完結"
-        kb = {"inline_keyboard": [[
-            {"text": "🎬 開新系列", "callback_data": "newseries"},
-            {"text": "⭐ 收藏", "callback_data": f"favx_{series['genre']}"},
-        ]]}
+        # 終集：彈返評分，評整個系列（餵 winner 學習 + 互動率）
+        footer = "\n\n━━━━━━━━━━\n🎬 本系列完結，覺得點？"
+        kb = {"inline_keyboard": [
+            [{"text": "😞 差",   "callback_data": f"ratex_1_{_gn}"},
+             {"text": "😐 一般", "callback_data": f"ratex_2_{_gn}"},
+             {"text": "😊 好",   "callback_data": f"ratex_3_{_gn}"},
+             {"text": "🤩 超好", "callback_data": f"ratex_4_{_gn}"}],
+            [{"text": "🎬 開新系列", "callback_data": "newseries"}, _fav_btn],
+        ]}
     else:
         pc = series.get("pending_choices", {})
         ca, cb = pc.get("a"), pc.get("b")
@@ -1271,14 +1279,14 @@ def _generate_and_send_episode(series, ep_num):
             kb = {"inline_keyboard": [
                 [{"text": f"🔥 {ca}", "callback_data": f"choose_{series['id']}_a"}],
                 [{"text": f"❄️ {cb}", "callback_data": f"choose_{series['id']}_b"}],
-                [{"text": "⭐ 收藏", "callback_data": f"favx_{series['genre']}"}],
+                [_switch_btn, _fav_btn],
             ]}
         else:
             # fallback：若模型冇出選擇，退回單純「下一集」
             footer = f"\n\n━━━━━━━━━━\n👇 追落去（{ep_num}/{total}）"
             kb = {"inline_keyboard": [
                 [{"text": f"▶️ 下一集（{ep_num + 1}/{total}）", "callback_data": f"nextep_{series['id']}"}],
-                [{"text": "⭐ 收藏", "callback_data": f"favx_{series['genre']}"}],
+                [_switch_btn, _fav_btn],
             ]}
     send_telegram(header + clean + footer, reply_markup=kb)
     print(f"[episode] send_telegram 完成 {series['id']} ep{ep_num}")

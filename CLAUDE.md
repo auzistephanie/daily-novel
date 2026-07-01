@@ -37,6 +37,7 @@
 單篇一次過完結唔夠「追」。連載系統令一個故事 = 連續主角 + 世界觀 + 弧線(arc)，每集 800-1200 字收喺 cliffhanger，逼讀者追落去。核心設計兩條腿：
 
 - **A 需求驅動**：唔係全部連載。單篇照出做「發現」，讀者畀「🤩 超好」評分時，先彈「📖 續寫成連載」按鈕（callback `serialize_{genre}`）。只連載已證爆款，零浪費 API。`/series` 亦可手動開新／續集。
+- **出口 + 評分**：每集加「🎲 換個新故事」（callback `newseries`）——睇完唔啱即刻轉，唔追本身就係最強負評訊號（留存數據自動扣低此題材）。終集完結彈返 😞😐😊🤩 評分整個系列（`ratex_{score}_{genre}`），餵 winner 學習＋互動率。
 - **B 讀者選擇分支**：每集尾模型輸出 `<<<CA>>>`/`<<<CB>>>` 兩個選擇 → 化成按鈕（callback `choose_{sid}_{a|b}`）。讀者一撳，`last_choice` 寫入系列，下集按嗰個方向寫——讀者變共同作者。
 
 實作（`novel_generator.py`）：`SERIES_ARCS`（7 條弧線，長度 3-5，每 beat = 一集，含男頻末世腦洞／女頻雙強等 2026 爆點）、`start_new_series()`、`continue_series(id, choice)`、`_generate_and_send_episode()`、`_build_episode_prompt()`（單集 prompt + 強制岔口 cliffhanger）、`_parse_episode()`（容錯抽 NEXT/CA/CB/END，標題取正文第一行）。系列狀態存 Redis：`utils.save_series/load_series/list_ongoing_series`（key `series:{id}` TTL 30 日 + `series:ongoing` 索引）。
