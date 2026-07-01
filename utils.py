@@ -250,6 +250,72 @@ def save_story_to_disk(story: dict) -> None:
     print(f"[save_story_to_disk] 已存 {today}.json，共 {len(stories)} 篇")
 
 
+# ── 連載系列 I/O（Phase 1 追更引擎）──────────────────────────────
+
+def save_series(series: dict) -> None:
+    """存／更新一個連載系列（Redis，TTL 30 日），並維護 ongoing/done 索引。"""
+    key = f"series:{series['id']}"
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SET", key, _json.dumps(series, ensure_ascii=False), "EX", 2592000],
+        timeout=10,
+    )
+    is_done = series.get("status") == "completed"
+    # 加入對應索引集合
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SADD", "series:done" if is_done else "series:ongoing", series["id"]],
+        timeout=10,
+    )
+    # 完結後由 ongoing 移除
+    if is_done:
+        requests.post(
+            f"{_redis_url()}/",
+            headers={**_redis_headers(), "Content-Type": "application/json"},
+            json=["SREM", "series:ongoing", series["id"]],
+            timeout=10,
+        )
+
+
+def load_series(series_id: str) -> dict:
+    """讀取指定系列，找不到返回 {}。"""
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["GET", f"series:{series_id}"],
+        timeout=10,
+    )
+    value = resp.json().get("result")
+    return _json.loads(value) if value else {}
+
+
+def list_ongoing_series() -> list:
+    """列出所有仍在連載中的系列（供 /series 顯示，順道清走已完結的殘留 id）。"""
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SMEMBERS", "series:ongoing"],
+        timeout=10,
+    )
+    ids = resp.json().get("result", []) or []
+    out = []
+    for sid in ids:
+        s = load_series(sid)
+        if s and s.get("status") == "ongoing":
+            out.append(s)
+        else:
+            # 清理：已完結或過期的 id 由 ongoing 索引移除
+            requests.post(
+                f"{_redis_url()}/",
+                headers={**_redis_headers(), "Content-Type": "application/json"},
+                json=["SREM", "series:ongoing", sid],
+                timeout=10,
+            )
+    return out
+
+
 def send_toc_menu(stories_data: list) -> None:
     """發送今日故事目錄（可點擊的 inline keyboard）。📖=爽文 📚=情感文學"""
     keyboard = []

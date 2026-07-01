@@ -10,6 +10,13 @@ genre_data.json
 # 日誌
 *.log
 
+# Phase 1 驗證用 scratch（唔 commit）
+_verify*
+_vstate*.json
+_vsid*.txt
+trending_cache.json
+.error_check_state
+
 # Python
 __pycache__/
 *.py[cod]

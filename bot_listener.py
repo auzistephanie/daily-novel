@@ -178,7 +178,8 @@ def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
-        {"command": "now",     "description": "即時生成（隨機）"},
+        {"command": "series",  "description": "連載追更（開新／續集）"},
+        {"command": "now",     "description": "即時生成單篇（隨機）"},
         {"command": "browse",  "description": "揀類別生成"},
         {"command": "library", "description": "今日 / 收藏 / 歷史 / 統計"},
         {"command": "help",    "description": "指令說明"},
@@ -526,8 +527,9 @@ def handle_callback(cb):
         ]
         if hot_genre:
             send_telegram(
-                f"🤩 《{hot_genre}》超好！",
+                f"🤩 《{hot_genre}》超好！要唔要我續寫落去、變成連載？",
                 reply_markup={"inline_keyboard": [
+                    [{"text": f"📖 續寫成連載《{hot_genre}》", "callback_data": f"serialize_{hot_genre}"}],
                     [{"text": f"➕ 加推《{hot_genre}》", "callback_data": f"more_{hot_genre}"},
                      {"text": "⭐ 收藏",                "callback_data": f"fav_{story_num}"}],
                     _again_row,
@@ -551,8 +553,9 @@ def handle_callback(cb):
         ]
         if hot_genre:
             send_telegram(
-                f"🤩 《{hot_genre}》超好！",
+                f"🤩 《{hot_genre}》超好！要唔要我續寫落去、變成連載？",
                 reply_markup={"inline_keyboard": [
+                    [{"text": f"📖 續寫成連載《{hot_genre}》", "callback_data": f"serialize_{hot_genre}"}],
                     [{"text": f"➕ 加推《{hot_genre}》", "callback_data": f"more_{hot_genre}"},
                      {"text": "⭐ 收藏",                "callback_data": f"favx_{genre_name}"}],
                     _again_row,
@@ -655,6 +658,27 @@ def handle_callback(cb):
         answer_callback(cb["id"], "加推生成中...")
         threading.Thread(target=_run_generate_one, args=(genre_name, "[加推]"), daemon=True).start()
 
+    elif cb_data.startswith("nextep_"):
+        sid = cb_data[7:]
+        answer_callback(cb["id"], "生成下一集...")
+        threading.Thread(target=_run_continue_series, args=(sid, None), daemon=True).start()
+
+    elif cb_data.startswith("choose_"):
+        # 格式：choose_{sid}_{a|b}
+        rest = cb_data[len("choose_"):]
+        sid, _, letter = rest.rpartition("_")
+        answer_callback(cb["id"], "你嘅選擇生效，生成下一集...")
+        threading.Thread(target=_run_continue_series, args=(sid, letter), daemon=True).start()
+
+    elif cb_data == "newseries":
+        answer_callback(cb["id"], "開新系列...")
+        threading.Thread(target=_run_new_series, args=(None,), daemon=True).start()
+
+    elif cb_data.startswith("serialize_"):
+        genre_name = cb_data[len("serialize_"):]
+        answer_callback(cb["id"], "續寫成連載...")
+        threading.Thread(target=_run_new_series, args=(genre_name,), daemon=True).start()
+
 
 # ── 生成執行緒 ────────────────────────────────────────────────────
 
@@ -686,6 +710,36 @@ def _run_generate_lit(genre_name=None):
         stop.set()
 
 
+def _run_new_series(genre_name=None):
+    """開新連載系列（Phase 1 追更引擎）。"""
+    stop = threading.Event()
+    threading.Thread(target=_typing_loop, args=(stop,), daemon=True).start()
+    try:
+        from novel_generator import start_new_series
+        start_new_series(genre_name)
+    except Exception:
+        import traceback
+        print(f"[_run_new_series] 錯誤：{traceback.format_exc()}")
+        send_telegram("⚠️ 系列生成失敗，請 /series 再試")
+    finally:
+        stop.set()
+
+
+def _run_continue_series(series_id, choice_letter=None):
+    """續寫下一集。choice_letter='a'/'b' 時按讀者選擇改寫方向。"""
+    stop = threading.Event()
+    threading.Thread(target=_typing_loop, args=(stop,), daemon=True).start()
+    try:
+        from novel_generator import continue_series
+        continue_series(series_id, choice_letter)
+    except Exception:
+        import traceback
+        print(f"[_run_continue_series] 錯誤：{traceback.format_exc()}")
+        send_telegram("⚠️ 下一集生成失敗，請再撳一次「▶️ 下一集」")
+    finally:
+        stop.set()
+
+
 def _run_generate_random():
     """隨機生成：70% 爽文，30% 情感文學。"""
     if random.random() < 0.7:
@@ -706,7 +760,8 @@ def handle_message(text):
     if cmd(text, "/help") or cmd(text, "/start"):
         send_telegram(
             "📖 小說機器人\n\n"
-            "/now — 即時生成（隨機：爽文或情感）\n"
+            "/series — 連載追更（每集收喺鉤位，撳「▶️ 下一集」追落去）\n"
+            "/now — 即時生成單篇（隨機：爽文或情感）\n"
             "/browse — 揀類別生成\n"
             "/library — 今日故事 / 收藏 / 歷史 / 統計\n\n"
             "進階指令：\n"
@@ -720,6 +775,24 @@ def handle_message(text):
 
     if cmd(text, "/now") or cmd(text, "/lit"):
         threading.Thread(target=_run_generate_random, daemon=True).start()
+        return
+
+    if cmd(text, "/series"):
+        ongoing = []
+        try:
+            from utils import list_ongoing_series
+            ongoing = list_ongoing_series()
+        except Exception as e:
+            print(f"[/series] 讀取 ongoing 失敗：{e}")
+        if ongoing:
+            kb = [[{
+                "text": f"▶️ 續《{s.get('title') or s['genre']}》（{len(s.get('episodes', []))}/{len(s['arc'])}）",
+                "callback_data": f"nextep_{s['id']}",
+            }] for s in ongoing[:8]]
+            kb.append([{"text": "🎬 開全新系列", "callback_data": "newseries"}])
+            send_telegram("📚 你追緊嘅系列：", reply_markup={"inline_keyboard": kb})
+        else:
+            threading.Thread(target=_run_new_series, args=(None,), daemon=True).start()
         return
 
     if cmd(text, "/browse"):

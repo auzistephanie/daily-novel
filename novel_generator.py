@@ -952,3 +952,269 @@ def generate_and_send_one(genre_name=None, label="📖"):
     print("[generate_and_send_one] send_telegram 完成")
 
 
+# ══════════════════════════════════════════════════════════════════
+# ── Phase 1：連載追更引擎 ──────────────────────────────────────────
+# 一個「系列」= 連續主角 + 世界觀 + 弧線(arc)，每集 800-1200 字收喺
+# cliffhanger，Telegram「▶️ 下一集」即時解鎖。系列長度由 arc 決定(3-5 集)。
+# ══════════════════════════════════════════════════════════════════
+
+import re as _re
+import uuid as _uuid
+
+# 系列弧線骨架池（每個 beat = 一集，長度 3-5）
+SERIES_ARCS = [
+    {"name": "虐戀四幕", "channel": "F",
+     "beats": ["當眾被虐、尊嚴被踐踏到底", "決絕轉身，亮出第一張底牌",
+               "身份與真相層層揭開，全場震動", "終極反殺，對方跪地追悔莫及"]},
+    {"name": "雙強五幕", "channel": "F",
+     "beats": ["勢均力敵的初次交鋒", "彼此試探、暗中較勁", "危機逼近、被迫並肩",
+               "最大反轉、關係翻盤", "雙向奔赴，各自封神"]},
+    {"name": "重生復仇三幕", "channel": "F",
+     "beats": ["重生歸來、看清前世死局", "步步算計、手撕渣男賤女", "奪回一切、活得肆意通透"]},
+    {"name": "懸疑三幕", "channel": "F",
+     "beats": ["迷局開場、拋出最大鉤子", "真相碎片、中段大反轉", "謎底爆發、情感與懸念同收"]},
+    {"name": "逆襲五幕", "channel": "M",
+     "beats": ["谷底受辱、萬人踩低", "暗中佈局初現端倪", "第一次當眾打臉",
+               "反派反撲、危機升級", "全面碾壓、塵埃落定"]},
+    {"name": "腦洞末世四幕", "channel": "M",
+     "beats": ["末世降臨、規則崩壞", "覺醒異能、第一次逆襲", "陣營對決、人性考驗", "登頂終局、改寫規則"]},
+    {"name": "馬甲三幕", "channel": "M",
+     "beats": ["被當廢物、當眾看低", "第一層馬甲被踢爆、全場譁然", "頂級身份盡揭、震撼收場"]},
+]
+
+
+def _pick_arc(channel):
+    pool = [a for a in SERIES_ARCS if a["channel"] == channel] or SERIES_ARCS
+    return random.choice(pool)
+
+
+def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
+    """單集 prompt：只推進一個 beat，強制 cliffhanger + 控制碼。"""
+    beats = series["arc"]
+    beat = beats[ep_num - 1]
+    total = len(beats)
+    is_last = ep_num == total
+    ch = series["channel"]
+    c = series["character"]
+    tone = ("女性讀者看完想截圖轉發的言情爽文" if ch == "F"
+            else "讓人第一句就放不下的打臉逆襲爽文")
+    if ep_num == 1:
+        recap = ""
+    else:
+        _lc = series.get("last_choice", "")
+        recap = f"\n【上集懸念（本集開場須接住並回應）】\n{series.get('next_hook', '')}\n"
+        if _lc:
+            recap += f"【讀者親自選擇了：「{_lc}」】本集必須順住呢個選擇發展，唔可以走返轉頭，要讓讀者覺得「係我嘅決定改寫咗劇情」。\n"
+
+    if is_last:
+        ending_rule = (
+            "【本集為最終集】完整收束整個系列：\n"
+            "① 反派下場交代清楚（失去什麼、求而不得什麼）\n"
+            "② 主角最終狀態要有畫面感，用一個具體場景／動作定格\n"
+            "③ 呼應第 1 集開場的細節或對白，首尾成環\n"
+            "結尾另起一行輸出控制碼：<<<END>>>")
+        title_rule = "唔好再寫標題，直接接住上集劇情。"
+        word_rule = "1200-1800 字（終集可略長）｜完整結局最少佔本集 30%"
+    else:
+        ending_rule = (
+            "【本集非最終集】必須收喺一個「逼讀者做決定」嘅 cliffhanger：主角行到關鍵岔口，\n"
+            "兩條路都合理、都有代價。可以喺正文自然帶出呢個兩難。\n"
+            "然後喺全文最尾，另起三行輸出控制碼，格式一字不差、每行都要用足三個尖括號：\n"
+            "<<<NEXT: 一句下集懸念種子，20字內>>>\n"
+            "<<<CA: 讀者選擇A，一個具體行動，12字內>>>\n"
+            "<<<CB: 讀者選擇B，同A方向明顯不同，12字內>>>\n"
+            "示範（照跟格式）：\n"
+            "<<<NEXT: 律師信封裡的秘密即將曝光>>>\n<<<CA: 先私下調查律師>>>\n<<<CB: 即刻殺入會議室>>>")
+        title_rule = ("首集：正文第一行寫一個爆款系列標題（獨立一行，用標題公式，"
+                      "唔好加「第1集」字樣）。" if ep_num == 1
+                      else "唔好再寫標題，直接接住上集劇情。")
+        word_rule = "800-1200 字｜收尾必須吊人"
+
+    _trend = (f"\n【今日爆款素材參考，自然融入 1 個最啱嘅】\n{trending_hint}\n"
+              if trending_hint else "")
+
+    return f"""你是頂尖中文網絡爽文作家，寫緊一個連載系列嘅「第 {ep_num}/{total} 集」，{tone}。
+
+【系列設定（全系列一致，唔可改）】
+類型：{series['genre']}
+主角：{c['name']}（{c['gender']}／{c['occupation']}／{c['personality']}）
+個人傷口：{c['wound']}
+反派原型：{villain}
+故事舞台：{unique['setting']}
+寫作風格（全系列統一語感）：{unique['writing_style']}
+{recap}
+{TITLE_RULE if ep_num == 1 else ''}
+
+【本集任務 — beat {ep_num}/{total}】
+{beat}
+→ 本集只推進呢一個 beat，唔好跳。節奏硬指標：每 200-300 字要有一個情緒點、
+  資訊反轉或懸念，全程唔可以有悶場。
+
+【標題規則】
+{title_rule}
+
+【結局／收尾規則】
+{ending_rule}
+
+【寫作硬指標】
+・第一段即入戲，{('用開場鉤子撕裂感開篇' if ep_num == 1 else '接住上集張力')}
+・具體 > 籠統（數字、頭銜、實物勝過形容詞）
+・對白帶性格與潛台詞，主角同反派講嘢方式截然不同
+・主角／女主嘅強靠行動同對白體現，唔靠旁白話讀者知
+
+字數：{word_rule} ｜ 繁體中文 ｜ 直接開始寫：
+{_trend}"""
+
+
+def _parse_episode(raw):
+    """抽出控制碼(NEXT/CA/CB/END)並從顯示文字清走。容錯：尖括號數目 1-3 都收。
+    標題由呼叫方取正文第一行，唔靠控制碼（模型較穩定）。"""
+    def _grab(tag):
+        m = _re.search(r"<+\s*%s\s*[:：]\s*(.+?)>+" % tag, raw, _re.S)
+        return m.group(1).strip() if m else None
+
+    next_hook = _grab("NEXT")
+    choice_a = _grab("CA")
+    choice_b = _grab("CB")
+    ended = bool(_re.search(r"<+\s*END\s*>+", raw))
+
+    clean = _re.sub(r"<+\s*(?:TITLE|NEXT|CA|CB)\s*[:：].*?>+", "", raw, flags=_re.S)
+    clean = _re.sub(r"<+\s*END\s*>+", "", clean)
+    # 清走任何殘留半截控制碼行
+    clean = _re.sub(r"^\s*<+\s*(?:TITLE|NEXT|CA|CB|END).*$", "", clean, flags=_re.M)
+    # 清走殘留角括號（例如模型把標題包成 <<<標題>>>）
+    clean = _re.sub(r"[<>]{2,}", "", clean)
+    # 清走開頭殘留嘅「# 第N集」markdown 標題行（header 已顯示集數）
+    clean = _re.sub(r"^\s*#{0,3}\s*第[0-9一二三四五六七八九十]+集\s*\n+", "", clean.lstrip())
+    return clean.strip(), next_hook, choice_a, choice_b, ended
+
+
+def start_new_series(genre_name=None):
+    """開一個新連載系列並發送第 1 集。"""
+    from utils import save_series
+    genre = (next((g for g in GENRES if g["name"] == genre_name), None)
+             if genre_name else weighted_choice(GENRES))
+    if genre is None:
+        genre = weighted_choice(GENRES)
+    ch = genre.get("channel", "M")
+    character = generate_character(ch, genre["name"])
+    arc = _pick_arc(ch)
+    unique = _pick_unique_elements(genre["name"])
+    villain = random.choice(FEMALE_VILLAINS if ch == "F" else VILLAINS)
+    series = {
+        "id": "s" + _uuid.uuid4().hex[:5],
+        "genre": genre["name"], "channel": ch,
+        "character": character, "title": None,
+        "arc": arc["beats"], "arc_name": arc["name"],
+        "dna": unique, "villain": villain,
+        "episodes": [], "next_hook": "", "status": "ongoing",
+    }
+    _generate_and_send_episode(series, 1)
+    return series
+
+
+def continue_series(series_id, choice_letter=None):
+    """讀取指定系列並生成／發送下一集。choice_letter='a'/'b' 時按讀者選擇改寫方向。"""
+    from utils import load_series
+    series = load_series(series_id)
+    if not series:
+        send_telegram("⚠️ 搵唔到呢個系列（可能已過期），用 /series 開新一個。")
+        return
+    if series.get("status") == "completed":
+        send_telegram("🎬 呢個系列已完結！開下一個？（/series）")
+        return
+    if choice_letter:
+        pc = series.get("pending_choices", {})
+        series["last_choice"] = pc.get(choice_letter, "")
+    _generate_and_send_episode(series, len(series.get("episodes", [])) + 1)
+    return series
+
+
+def _generate_and_send_episode(series, ep_num):
+    """生成單集、存 Redis、連按鈕發送。"""
+    from utils import save_series
+    ch = series["channel"]
+    total = len(series["arc"])
+    _title_disp = series.get("title") or series["genre"]
+    send_telegram(f"✨ 生成中：《{_title_disp}》第 {ep_num}/{total} 集，請稍候（約 30 秒）...")
+
+    trending_hint = ""
+    try:
+        from utils import fetch_trending_topics
+        trending_hint = fetch_trending_topics(ch)
+    except Exception as e:
+        print(f"[episode] trending 抓取失敗（非致命）：{e}")
+
+    prompt = _build_episode_prompt(series, ep_num, series["dna"], series["villain"], trending_hint)
+    client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+
+    raw = None
+    last_err = None
+    for attempt in range(1, 4):
+        try:
+            resp = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=1.1,
+                max_tokens=4000,
+            )
+            raw = resp.choices[0].message.content
+            break
+        except Exception as e:
+            last_err = e
+            print(f"[episode] 第 {attempt} 次失敗：{e}")
+    if raw is None:
+        raise RuntimeError(f"單集生成失敗（已重試 3 次）：{last_err}")
+
+    clean, next_hook, choice_a, choice_b, ended = _parse_episode(raw)
+    if ep_num == 1 and not series.get("title"):
+        # 取正文第一行做系列標題
+        for line in clean.split("\n"):
+            if line.strip():
+                series["title"] = line.strip()
+                break
+    series.setdefault("episodes", []).append({"ep": ep_num, "content": clean})
+    if next_hook:
+        series["next_hook"] = next_hook
+    series["pending_choices"] = ({"a": choice_a, "b": choice_b}
+                                 if (choice_a and choice_b) else {})
+    if ended or ep_num >= total:
+        series["status"] = "completed"
+    save_series(series)
+    print(f"[episode] 系列 {series['id']} 第 {ep_num}/{total} 集完成，status={series['status']}，字數={len(clean)}")
+
+    is_done = series["status"] == "completed"
+    ch_tag = "💕 女頻" if ch == "F" else "🔥 男頻"
+    _title_disp = series.get("title") or series["genre"]
+    header = (
+        f"📖 《{_title_disp}》 第 {ep_num}/{total} 集\n"
+        f"👤 {series['character']['name']} ｜ {ch_tag} ｜ {series['arc_name']}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+    )
+    if is_done:
+        footer = "\n\n━━━━━━━━━━\n🎬 本系列完結"
+        kb = {"inline_keyboard": [[
+            {"text": "🎬 開新系列", "callback_data": "newseries"},
+            {"text": "⭐ 收藏", "callback_data": f"favx_{series['genre']}"},
+        ]]}
+    else:
+        pc = series.get("pending_choices", {})
+        ca, cb = pc.get("a"), pc.get("b")
+        if ca and cb:
+            footer = f"\n\n━━━━━━━━━━\n👇 你想點？你嘅選擇改寫下一集（{ep_num}/{total}）"
+            kb = {"inline_keyboard": [
+                [{"text": f"🔥 {ca}", "callback_data": f"choose_{series['id']}_a"}],
+                [{"text": f"❄️ {cb}", "callback_data": f"choose_{series['id']}_b"}],
+                [{"text": "⭐ 收藏", "callback_data": f"favx_{series['genre']}"}],
+            ]}
+        else:
+            # fallback：若模型冇出選擇，退回單純「下一集」
+            footer = f"\n\n━━━━━━━━━━\n👇 追落去（{ep_num}/{total}）"
+            kb = {"inline_keyboard": [
+                [{"text": f"▶️ 下一集（{ep_num + 1}/{total}）", "callback_data": f"nextep_{series['id']}"}],
+                [{"text": "⭐ 收藏", "callback_data": f"favx_{series['genre']}"}],
+            ]}
+    send_telegram(header + clean + footer, reply_markup=kb)
+    print(f"[episode] send_telegram 完成 {series['id']} ep{ep_num}")
+
+

@@ -1,6 +1,6 @@
 # CLAUDE.md — 每日小說生成器
 
-按需生成中文網絡爽文（自己選擇時間先生成，唔再自動排程），推送 Telegram。DeepSeek-V3 生成，支援評分回饋、加權選類、即時生成。
+按需生成中文網絡爽文（自己選擇時間先生成，唔再自動排程），推送 Telegram。DeepSeek-V3 生成，支援評分回饋、加權選類、即時生成、**連載追更 + 讀者選擇分支**。
 
 ## 核心檔案
 - `novel_generator.py` — 主腳本：類別池、主角生成、故事生成、加推
@@ -29,8 +29,17 @@
 
 女頻專屬池：`FEMALE_VILLAINS`、`FEMALE_OCCUPATIONS`、`FEMALE_PERSONALITIES`、`FEMALE_OPENING_HOOKS`。
 
+## 連載追更系統（2026-07 Phase 1｜追睇引擎）
+
+單篇一次過完結唔夠「追」。連載系統令一個故事 = 連續主角 + 世界觀 + 弧線(arc)，每集 800-1200 字收喺 cliffhanger，逼讀者追落去。核心設計兩條腿：
+
+- **A 需求驅動**：唔係全部連載。單篇照出做「發現」，讀者畀「🤩 超好」評分時，先彈「📖 續寫成連載」按鈕（callback `serialize_{genre}`）。只連載已證爆款，零浪費 API。`/series` 亦可手動開新／續集。
+- **B 讀者選擇分支**：每集尾模型輸出 `<<<CA>>>`/`<<<CB>>>` 兩個選擇 → 化成按鈕（callback `choose_{sid}_{a|b}`）。讀者一撳，`last_choice` 寫入系列，下集按嗰個方向寫——讀者變共同作者。
+
+實作（`novel_generator.py`）：`SERIES_ARCS`（7 條弧線，長度 3-5，每 beat = 一集，含男頻末世腦洞／女頻雙強等 2026 爆點）、`start_new_series()`、`continue_series(id, choice)`、`_generate_and_send_episode()`、`_build_episode_prompt()`（單集 prompt + 強制岔口 cliffhanger）、`_parse_episode()`（容錯抽 NEXT/CA/CB/END，標題取正文第一行）。系列狀態存 Redis：`utils.save_series/load_series/list_ongoing_series`（key `series:{id}` TTL 30 日 + `series:ongoing` 索引）。
+
 ## Bot 指令
-`/now` 即時生成 · `/list` 瀏覽類別 · `/more` 高分加推 · `/stats` 評分統計 · `/menu` 今日目錄 · `/history` 近 7 日 · `/help`
+`/series` 連載追更（開新／續集）· `/now` 即時生成單篇 · `/browse` 揀類別 · `/more` 高分加推 · `/stats` 評分統計 · `/library` 故事庫 · `/history` 近 7 日 · `/help`
 
 ## 自動化
 - 已取消自動 cron 生成，改為按需執行 `python3 novel_generator.py` 或 Telegram `/now`
@@ -41,3 +50,4 @@
 - **2026-06-11**：刪 6 個男頻冷門類別（醫術流／古言權謀／鑑寶奇才／神豪撒幣／末世崛起／競技熱血）；新增 10 個女頻言情爆款 + channel/weight 加權系統；加爆款標題公式；男女頻分開 prompt 模板。
 - **2026-06-23**：刪甜寵逆襲（男頻，市場飽和）、玄學風水（冷門）；新增漫畫感爽文（M, w2）、重生年代稱霸（M, w2）、懸疑言情（F, w2）——對應 2026 短劇爆款趨勢。
 - **2026-07-01**：刪重生年代稱霸（風格特殊，整合難度高）；/now 同 /lit 合併為隨機生成；加 CHARACTER_WOUNDS、TWIST_SEEDS、VILLAIN_MOTIVATIONS、SUSPENSE_HOOKS 池提升故事質量。
+- **2026-07-02**：**Phase 1 追睇引擎**——由「短篇機」變「追劇機」。新增連載系統（`SERIES_ARCS` 7 條弧線 3-5 集，每集收 cliffhanger）+ 需求驅動（🤩 超好 → 續寫成連載）+ 讀者選擇分支（每集尾 2 選擇改寫下集）。新指令 `/series`。已用家身份實跑驗證：ep1 標題+選擇掣、ep2 接住讀者選擇、ep3 終集完結，劇情連貫、無殘留控制碼。對應 2026 短劇「密集反轉 + 追更留存」趨勢。
