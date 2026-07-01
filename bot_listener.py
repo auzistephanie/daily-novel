@@ -178,8 +178,7 @@ def register_commands():
     """向 Telegram 登記指令，令用戶打 / 時自動顯示選單。"""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     commands = [
-        {"command": "now",     "description": "即時爽文（隨機生成）"},
-        {"command": "lit",     "description": "即時情感文學（隨機生成）"},
+        {"command": "now",     "description": "即時生成（隨機）"},
         {"command": "browse",  "description": "揀類別生成"},
         {"command": "library", "description": "今日 / 收藏 / 歷史 / 統計"},
         {"command": "help",    "description": "指令說明"},
@@ -682,9 +681,17 @@ def _run_generate_lit(genre_name=None):
     except Exception as e:
         import traceback
         print(f"[_run_generate_lit] 錯誤：{traceback.format_exc()}")
-        send_telegram("⚠️ 情感文學生成失敗，請稍後再試（/lit 重新生成）")
+        send_telegram("⚠️ 故事生成失敗，請稍後再試（/now 重新生成）")
     finally:
         stop.set()
+
+
+def _run_generate_random():
+    """隨機生成：70% 爽文，30% 情感文學。"""
+    if random.random() < 0.7:
+        _run_generate_one(None, "")
+    else:
+        _run_generate_lit(None)
 
 
 # ── 文字指令處理 ──────────────────────────────────────────────────
@@ -699,8 +706,7 @@ def handle_message(text):
     if cmd(text, "/help") or cmd(text, "/start"):
         send_telegram(
             "📖 小說機器人\n\n"
-            "/now — 即時爽文（隨機生成）\n"
-            "/lit — 即時情感文學（隨機生成）\n"
+            "/now — 即時生成（隨機：爽文或情感）\n"
             "/browse — 揀類別生成\n"
             "/library — 今日故事 / 收藏 / 歷史 / 統計\n\n"
             "進階指令：\n"
@@ -712,12 +718,8 @@ def handle_message(text):
         )
         return
 
-    if cmd(text, "/now"):
-        threading.Thread(target=_run_generate_one, args=(None, ""), daemon=True).start()
-        return
-
-    if cmd(text, "/lit"):
-        threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
+    if cmd(text, "/now") or cmd(text, "/lit"):
+        threading.Thread(target=_run_generate_random, daemon=True).start()
         return
 
     if cmd(text, "/browse"):
