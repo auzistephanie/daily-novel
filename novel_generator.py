@@ -59,6 +59,40 @@ def weighted_choice(genres):
     weights = [g.get("weight", 1) for g in genres]
     return random.choices(genres, weights=weights, k=1)[0]
 
+
+# ── 追更率驅動（Phase 3）──────────────────────────────────────────
+def _retention_multiplier(genre_name, metrics=None):
+    """按留存數據算一個 0.5–3.0 嘅加權倍數。數據唔夠（start<2）返 1.0。
+    完讀率高、平均追更集數多 → 倍數大 → 更常被抽中。"""
+    if metrics is None:
+        try:
+            from utils import load_metrics
+            metrics = load_metrics()
+        except Exception:
+            metrics = {}
+    m = metrics.get(genre_name)
+    if not m or m.get("start", 0) < 2:
+        return 1.0
+    starts = m["start"]
+    comp_rate = m.get("complete", 0) / starts            # 完讀率 0-1
+    avg_eps = (starts + m.get("continue", 0)) / starts    # 平均追更集數 ≥1
+    mult = 1.0 + 0.6 * comp_rate + 0.15 * max(0.0, avg_eps - 1)
+    return max(0.5, min(3.0, mult))
+
+
+def weighted_choice_retention(genres, metrics=None):
+    """weighted_choice 的留存加權版：base weight × 追更率倍數。"""
+    if not genres:
+        genres = GENRES
+    if metrics is None:
+        try:
+            from utils import load_metrics
+            metrics = load_metrics()
+        except Exception:
+            metrics = {}
+    weights = [g.get("weight", 1) * _retention_multiplier(g["name"], metrics) for g in genres]
+    return random.choices(genres, weights=weights, k=1)[0]
+
 # ── 男頻反派原型（越具體越欠打，打臉才越爽）──────────────────────
 VILLAINS = [
     "飛黃騰達後回來羞辱舊愛的前任，帶著新歡在主角面前炫耀",
@@ -908,14 +942,15 @@ def generate_and_send_one(genre_name=None, label="📖"):
             and sum(ratings[g["name"]]) / len(ratings[g["name"]]) >= 3.5
         ]
         if favored:
-            genre = random.choice(favored)
+            # 高分類別中，再按追更率加權（留存高嘅更常出）
+            genre = weighted_choice_retention(favored)
         elif recent:
-            # 次選：最久未出現的類別（LRU），加權偏向女頻爆款
+            # 次選：最久未出現的類別（LRU），按 weight × 追更率加權
             recent_set = set(recent)
             unseen = [g for g in GENRES if g["name"] not in recent_set]
-            genre = weighted_choice(unseen) if unseen else weighted_choice(GENRES)
+            genre = weighted_choice_retention(unseen) if unseen else weighted_choice_retention(GENRES)
         else:
-            genre = weighted_choice(GENRES)
+            genre = weighted_choice_retention(GENRES)
 
     character = generate_character(genre.get("channel", "M"), genre.get("name", ""))
     _label_display = f" {label}" if label else ""
@@ -1122,6 +1157,11 @@ def start_new_series(genre_name=None):
         "dna": unique, "villain": villain,
         "episodes": [], "next_hook": "", "status": "ongoing",
     }
+    try:
+        from utils import record_metric
+        record_metric("start", genre["name"])
+    except Exception:
+        pass
     _generate_and_send_episode(series, 1)
     return series
 
@@ -1139,6 +1179,13 @@ def continue_series(series_id, choice_letter=None):
     if choice_letter:
         pc = series.get("pending_choices", {})
         series["last_choice"] = pc.get(choice_letter, "")
+    try:
+        from utils import record_metric
+        record_metric("continue", series["genre"])
+        if choice_letter:
+            record_metric("choice", series["genre"])
+    except Exception:
+        pass
     _generate_and_send_episode(series, len(series.get("episodes", [])) + 1)
     return series
 
@@ -1194,6 +1241,12 @@ def _generate_and_send_episode(series, ep_num):
     if ended or ep_num >= total:
         series["status"] = "completed"
     save_series(series)
+    if series["status"] == "completed":
+        try:
+            from utils import record_metric
+            record_metric("complete", series["genre"])
+        except Exception:
+            pass
     print(f"[episode] 系列 {series['id']} 第 {ep_num}/{total} 集完成，status={series['status']}，字數={len(clean)}")
 
     is_done = series["status"] == "completed"

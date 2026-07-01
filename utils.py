@@ -250,6 +250,45 @@ def save_story_to_disk(story: dict) -> None:
     print(f"[save_story_to_disk] 已存 {today}.json，共 {len(stories)} 篇")
 
 
+# ── 留存 Metrics I/O（Phase 3 追更數據）──────────────────────────
+# 追蹤真實可量度嘅點擊事件（Telegram bot 冇「已讀」回執，量度唔到開篇率）
+#   start    — 開一個新系列
+#   continue — 撳「▶️下一集」/選擇掣，追多一集
+#   choice   — 用選擇掣分支（continue 的子集）
+#   complete — 系列追到終集
+# 結構：{genre: {"start":n,"continue":n,"choice":n,"complete":n}}
+
+def load_metrics() -> dict:
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["GET", "retention_metrics"],
+        timeout=10,
+    )
+    value = resp.json().get("result")
+    return _json.loads(value) if value else {}
+
+
+def save_metrics(data: dict) -> None:
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SET", "retention_metrics", _json.dumps(data, ensure_ascii=False)],
+        timeout=10,
+    )
+
+
+def record_metric(event: str, genre_name: str) -> None:
+    """記一個留存事件（非致命，失敗唔影響主流程）。"""
+    try:
+        data = load_metrics()
+        g = data.setdefault(genre_name, {"start": 0, "continue": 0, "choice": 0, "complete": 0})
+        g[event] = g.get(event, 0) + 1
+        save_metrics(data)
+    except Exception as e:
+        print(f"[record_metric] {event}/{genre_name} 失敗（非致命）：{e}")
+
+
 # ── 連載系列 I/O（Phase 1 追更引擎）──────────────────────────────
 
 def save_series(series: dict) -> None:

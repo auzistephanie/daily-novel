@@ -404,6 +404,31 @@ def handle_stats():
                 for text, cnt in top:
                     lines.append(f"  • {text}（{cnt}次）")
 
+    # ── 留存面板（Phase 3 追更數據）─────────────────────────────────
+    try:
+        from utils import load_metrics
+        metrics = load_metrics()
+    except Exception:
+        metrics = {}
+    ret = []
+    for name, m in metrics.items():
+        starts = m.get("start", 0)
+        if starts <= 0:
+            continue
+        avg_eps = (starts + m.get("continue", 0)) / starts     # 追更率：平均追幾多集
+        comp_rate = m.get("complete", 0) / starts               # 完讀率
+        ret.append((name, avg_eps, comp_rate, starts, m.get("choice", 0)))
+    if ret:
+        ret.sort(key=lambda x: x[1], reverse=True)
+        lines.append("\n\n📈 追更留存（邊個題材最黐人）\n")
+        lines.append("追更率＝平均追幾多集｜完讀率＝追到終集%")
+        for name, avg_eps, comp_rate, starts, choices in ret:
+            lines.append(
+                f"• {name}：追更 {avg_eps:.1f} 集 ｜ 完讀 {comp_rate*100:.0f}% "
+                f"｜ 開 {starts} 個系列 ｜ 分支互動 {choices}"
+            )
+        lines.append("\n→ 高追更率題材已自動加權，更常出現")
+
     send_telegram("\n".join(lines))
 
 
