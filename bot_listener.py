@@ -2,6 +2,7 @@ import json
 import logging
 import logging.handlers
 import os
+import random
 import sys
 import time
 import threading
@@ -522,8 +523,7 @@ def handle_callback(cb):
         reply, hot_genre = handle_rating(story_num, score, stories)
         answer_callback(cb["id"], reply)
         _again_row = [
-            {"text": "🔁 再來爽文",   "callback_data": "again_novel"},
-            {"text": "🔁 再來情感文學", "callback_data": "again_lit"},
+            {"text": "🔁 再來一篇", "callback_data": "again_random"},
         ]
         if hot_genre:
             send_telegram(
@@ -548,8 +548,7 @@ def handle_callback(cb):
         reply, hot_genre = handle_bonus_rating(score, genre_name)
         answer_callback(cb["id"], reply)
         _again_row = [
-            {"text": "🔁 再來爽文",   "callback_data": "again_novel"},
-            {"text": "🔁 再來情感文學", "callback_data": "again_lit"},
+            {"text": "🔁 再來一篇", "callback_data": "again_random"},
         ]
         if hot_genre:
             send_telegram(
@@ -626,6 +625,13 @@ def handle_callback(cb):
     elif cb_data == "again_lit":
         answer_callback(cb["id"], "再來情感文學...")
         threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
+
+    elif cb_data == "again_random":
+        answer_callback(cb["id"], "再來一篇...")
+        if random.random() < 0.7:
+            threading.Thread(target=_run_generate_one, args=(None, ""), daemon=True).start()
+        else:
+            threading.Thread(target=_run_generate_lit, args=(None,), daemon=True).start()
 
     elif cb_data.startswith("fav_"):
         story_num = int(cb_data[4:])
