@@ -889,14 +889,22 @@ def poll():
 
             for update in data.get("result", []):
                 offset = update["update_id"] + 1
+                trigger = update.get("callback_query", {}).get("data") or update.get("message", {}).get("text", "")
 
-                if "callback_query" in update:
-                    handle_callback(update["callback_query"])
-                elif "message" in update:
-                    text = update["message"].get("text", "").strip()
-                    if text:
-                        log.info(f"收到指令: {text!r}")
-                        handle_message(text)
+                try:
+                    if "callback_query" in update:
+                        handle_callback(update["callback_query"])
+                    elif "message" in update:
+                        text = update["message"].get("text", "").strip()
+                        if text:
+                            log.info(f"收到指令: {text!r}")
+                            handle_message(text)
+                except Exception as e:
+                    log.error(f"Handler error on {trigger!r}: {e}", exc_info=True)
+                    try:
+                        send_telegram(f"⚠️ Bot error\n指令：{trigger}\n錯誤：{type(e).__name__}: {e}")
+                    except Exception:
+                        pass
 
         except Exception as e:
             log.error(f"Poll error: {e}")
