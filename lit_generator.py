@@ -1,6 +1,7 @@
 # lit_generator.py — 情感文學模式
 # 主題 × 情緒 × 主角類型 × 作家風格 = 每篇獨一無二
 # 與 novel_generator.py（爽文模式）並行，互不干擾。
+from __future__ import annotations
 
 import random
 import os
