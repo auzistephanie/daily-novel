@@ -330,6 +330,32 @@ def load_series(series_id: str) -> dict:
     return _json.loads(value) if value else {}
 
 
+def clear_all_ongoing_series() -> int:
+    """清走全部仍在追緊嘅連載系列（DEL 每個 series:{id} + 清走 series:ongoing 索引）。
+    返回實際清走咗幾多個。"""
+    resp = requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["SMEMBERS", "series:ongoing"],
+        timeout=10,
+    )
+    ids = resp.json().get("result", []) or []
+    for sid in ids:
+        requests.post(
+            f"{_redis_url()}/",
+            headers={**_redis_headers(), "Content-Type": "application/json"},
+            json=["DEL", f"series:{sid}"],
+            timeout=10,
+        )
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["DEL", "series:ongoing"],
+        timeout=10,
+    )
+    return len(ids)
+
+
 def list_ongoing_series() -> list:
     """列出所有仍在連載中的系列（供 /series 顯示，順道清走已完結的殘留 id）。"""
     resp = requests.post(

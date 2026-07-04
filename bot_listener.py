@@ -704,6 +704,31 @@ def handle_callback(cb):
         answer_callback(cb["id"], "續寫成連載...")
         threading.Thread(target=_run_new_series, args=(genre_name,), daemon=True).start()
 
+    elif cb_data == "clearseries_ask":
+        answer_callback(cb["id"])
+        send_telegram(
+            "⚠️ 確定要清空全部追緊嘅系列？呢個動作唔可以復原。",
+            reply_markup={"inline_keyboard": [[
+                {"text": "✅ 確定清空", "callback_data": "clearseries_confirm"},
+                {"text": "❌ 取消", "callback_data": "clearseries_cancel"},
+            ]]},
+        )
+
+    elif cb_data == "clearseries_confirm":
+        try:
+            from utils import clear_all_ongoing_series
+            n = clear_all_ongoing_series()
+            answer_callback(cb["id"], "已清空")
+            send_telegram(f"🗑 已清空 {n} 個追緊嘅系列。用 /series 開新系列。")
+        except Exception as e:
+            print(f"[clearseries] 失敗：{e}")
+            answer_callback(cb["id"], "清空失敗")
+            send_telegram("⚠️ 清空失敗，請稍後再試。")
+
+    elif cb_data == "clearseries_cancel":
+        answer_callback(cb["id"], "已取消")
+        send_telegram("已取消，你嘅系列維持原狀。")
+
 
 # ── 生成執行緒 ────────────────────────────────────────────────────
 
@@ -815,6 +840,7 @@ def handle_message(text):
                 "callback_data": f"nextep_{s['id']}",
             }] for s in ongoing[:8]]
             kb.append([{"text": "🎬 開全新系列", "callback_data": "newseries"}])
+            kb.append([{"text": "🗑 清空全部", "callback_data": "clearseries_ask"}])
             send_telegram("📚 你追緊嘅系列：", reply_markup={"inline_keyboard": kb})
         else:
             threading.Thread(target=_run_new_series, args=(None,), daemon=True).start()
