@@ -4,6 +4,12 @@
 
 > 內容系統詳解拆咗落 `docs/SYSTEMS.md`，按需 read_file。
 
+## ⚠️ 2026-07-04 起：唔再以 Telegram 為主要出口
+
+新方向係網站產品 **novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，本機喺 `daily-novel/novel-web/`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 08:10 / `novel-ending-generator` 20:09）直接用 Claude 生成內容寫入 Supabase，唔再經呢度嘅 `novel_generator.py` / DeepSeek API / Telegram bot。
+
+依家呢個 repo（`novel_generator.py`、`bot_listener.py`、Telegram 指令）**未刪**，Stephanie 未話幾時停 bot，但新功能／新故事出口請去 `daily-novel/novel-web/CLAUDE.md` 睇。
+
 ## 📖 文件讀取規則
 
 | 需要嘅資訊 | 讀邊份 |
