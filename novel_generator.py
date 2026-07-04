@@ -324,17 +324,45 @@ FEMALE_COURT_NAMES = ["芙蓉", "瑤華", "錦鸞", "雪鳶", "碧霞", "凝霜"
 
 def generate_character(channel="M", genre_name=""):
     """生成主角。channel='F' 女頻則以女主為主、配言情身份。
-    genre_name 用於按題材選取風格合適的名字。"""
+    genre_name 用於按題材選取風格合適的名字。
+    職業／性格／傷口套用返 recent_dna 防重複機制，避免短期內撞返同一組合。"""
+    from utils import load_recent_dna, save_recent_dna
+
+    try:
+        recent = load_recent_dna()
+    except Exception:
+        recent = {}
+
+    WINDOW = 5
+
+    def pick_fresh(pool, key):
+        used = set(recent.get(key, []))
+        fresh = [x for x in pool if x not in used]
+        if not fresh:
+            fresh = pool
+        val = random.choice(fresh)
+        lst = recent.get(key, [])
+        if val in lst:
+            lst.remove(val)
+        lst.append(val)
+        recent[key] = lst[-WINDOW:]
+        return val
+
     if channel == "F":
         gender = "女" if random.random() < 0.9 else "男"
-        occupation = random.choice(FEMALE_OCCUPATIONS)
-        personality = random.choice(FEMALE_PERSONALITIES)
-        wound = random.choice(FEMALE_WOUNDS)
+        occupation = pick_fresh(FEMALE_OCCUPATIONS, "occupation")
+        personality = pick_fresh(FEMALE_PERSONALITIES, "personality")
+        wound = pick_fresh(FEMALE_WOUNDS, "wound")
     else:
         gender = random.choice(["男", "女"])
-        occupation = random.choice(OCCUPATIONS)
-        personality = random.choice(PERSONALITIES)
-        wound = random.choice(MALE_WOUNDS)
+        occupation = pick_fresh(OCCUPATIONS, "occupation")
+        personality = pick_fresh(PERSONALITIES, "personality")
+        wound = pick_fresh(MALE_WOUNDS, "wound")
+
+    try:
+        save_recent_dna(recent)
+    except Exception:
+        pass
 
     # 判斷題材風格，選取對應名字池
     is_court = genre_name in ("穿越古代稱霸", "古言寵妃", "穿書反派")
@@ -549,9 +577,10 @@ NARRATIVE_STRUCTURES = [
 ]
 
 
-def _pick_unique_elements(genre_name=""):
+def _pick_unique_elements(genre_name="", channel="M"):
     """每次生成時隨機抽取一組故事 DNA，自動避開最近用過的元素（防重複）。
-    genre_name 用於識別古言題材，自動切換對應場景／王牌池，避免古代現代混用。"""
+    genre_name 用於識別古言題材，自動切換對應場景／王牌池，避免古代現代混用。
+    channel 用於揀返男／女頻嘅反派原型／開場鉤子池。"""
     from utils import load_recent_dna, save_recent_dna
 
     try:
@@ -582,6 +611,8 @@ def _pick_unique_elements(genre_name=""):
         "ending":             pick_fresh(ENDING_STRUCTURES,      "ending"),
         "twist_seed":         pick_fresh(TWIST_SEEDS,            "twist_seed"),
         "suspense_hook":      pick_fresh(SUSPENSE_HOOKS,         "suspense_hook"),
+        "villain":            pick_fresh(FEMALE_VILLAINS if channel == "F" else VILLAINS, "villain"),
+        "opening":            pick_fresh(FEMALE_OPENING_HOOKS if channel == "F" else OPENING_HOOKS, "opening"),
     }
 
     # 更新 recent 記錄（sliding window）
@@ -874,12 +905,9 @@ def generate_story(genre, character, max_retries: int = 3):
     """生成故事，失敗最多重試 max_retries 次。按 genre channel 分男／女頻寫法。"""
     client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
     channel = genre.get("channel", "M")
-    if channel == "F":
-        opening = random.choice(FEMALE_OPENING_HOOKS)
-        villain = random.choice(FEMALE_VILLAINS)
-    else:
-        opening = random.choice(OPENING_HOOKS)
-        villain = random.choice(VILLAINS)
+    unique = _pick_unique_elements(genre.get("name", ""), channel)
+    opening = unique["opening"]
+    villain = unique["villain"]
 
     # 若此類型有高分歷史，加入一條 DNA 參考提示
     winners = load_winners().get(genre["name"], [])
@@ -906,8 +934,6 @@ def generate_story(genre, character, max_retries: int = 3):
 開場情境：{ref.get('opening', '')}
 反派設定：{ref.get('villain', '')}
 → 此類開場和反派設計曾引發強烈爽感，可沿用相近的張力結構"""
-
-    unique = _pick_unique_elements(genre.get("name", ""))
 
     # 抓實時 trending 素材（失敗唔影響主流程）
     trending_hint = ""
@@ -1098,11 +1124,14 @@ def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
             "然後兩個選擇 CA/CB，就係主角喺呢個煞停位、面對眼前呢件事嘅兩個唔同下一步動作，"
             "讀者一睇就知係緊接住最後一句。\n"
             "❌ 選擇度唔可以出現正文最後一幕未提過嘅道具／人物／場景。\n"
-            "全文最尾另起三行輸出控制碼，格式一字不差、每行三個尖括號：\n"
-            "<<<NEXT: 一句下集懸念種子，20字內，緊扣呢一幕>>>\n"
-            "<<<CA: 承接呢一刻嘅選擇一，主角一個具體行動，12字內>>>\n"
-            "<<<CB: 承接呢一刻嘅選擇二，同A明顯不同，12字內>>>\n"
+            "全文最尾另起四行輸出控制碼，格式一字不差、每行三個尖括號：\n"
+            "<<<SCENE: 一句(15字內)白描返你啱啱寫完嘅正文最後一幕嘅具體畫面——邊度、邊個、拎緊/望緊/做緊咩，"
+            "一定要同正文最後一段真係一致，唔可以另外諗個新場景>>>\n"
+            "<<<NEXT: 一句下集懸念種子，20字內，必須基於上面SCENE嗰句，唔可以偏離>>>\n"
+            "<<<CA: 承接SCENE呢一刻嘅選擇一，主角一個具體行動，12字內，淨係可以用SCENE入面出現過嘅人物/道具/場景>>>\n"
+            "<<<CB: 承接SCENE呢一刻嘅選擇二，同A明顯不同，12字內，淨係可以用SCENE入面出現過嘅人物/道具/場景>>>\n"
             "示範（正文最後一幕：她盯住對方腰間嗰條皮帶，指紋證據就喺上面，全場等緊佢會唔會出手）：\n"
+            "<<<SCENE: 佢盯住對方腰間嗰條皮帶，指紋證據就喺上面>>>\n"
             "<<<NEXT: 皮帶上嘅證據即將攤喺全場面前>>>\n<<<CA: 當場扯出皮帶證據>>>\n<<<CB: 忍住、上馬贏咗先算賬>>>")
         title_rule = ("首集：正文第一行寫一個爆款系列標題（獨立一行，用標題公式，"
                       "唔好加「第1集」字樣）。" if ep_num == 1
@@ -1148,7 +1177,7 @@ def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
 
 
 def _parse_episode(raw):
-    """抽出控制碼(NEXT/CA/CB/END)並從顯示文字清走。容錯：尖括號數目 1-3 都收。
+    """抽出控制碼(SCENE/NEXT/CA/CB/END)並從顯示文字清走。容錯：尖括號數目 1-3 都收。
     標題由呼叫方取正文第一行，唔靠控制碼（模型較穩定）。"""
     def _grab(tag):
         m = _re.search(r"<+\s*%s\s*[:：]\s*(.+?)>+" % tag, raw, _re.S)
@@ -1159,10 +1188,10 @@ def _parse_episode(raw):
     choice_b = _grab("CB")
     ended = bool(_re.search(r"<+\s*END\s*>+", raw))
 
-    clean = _re.sub(r"<+\s*(?:TITLE|NEXT|CA|CB)\s*[:：].*?>+", "", raw, flags=_re.S)
+    clean = _re.sub(r"<+\s*(?:TITLE|SCENE|NEXT|CA|CB)\s*[:：].*?>+", "", raw, flags=_re.S)
     clean = _re.sub(r"<+\s*END\s*>+", "", clean)
     # 清走任何殘留半截控制碼行
-    clean = _re.sub(r"^\s*<+\s*(?:TITLE|NEXT|CA|CB|END).*$", "", clean, flags=_re.M)
+    clean = _re.sub(r"^\s*<+\s*(?:TITLE|SCENE|NEXT|CA|CB|END).*$", "", clean, flags=_re.M)
     # 清走殘留角括號（例如模型把標題包成 <<<標題>>>）
     clean = _re.sub(r"[<>]{2,}", "", clean)
     # 清走開頭殘留嘅「# 第N集」markdown 標題行（header 已顯示集數）
@@ -1170,6 +1199,52 @@ def _parse_episode(raw):
     # 清走開頭「標題：」/「標題:」前綴標籤（保留標題文字本身）
     clean = _re.sub(r"^\s*標題\s*[:：]\s*", "", clean.lstrip())
     return clean.strip(), next_hook, choice_a, choice_b, ended
+
+
+def _bigrams(s):
+    """將字串轉做去空白 2-gram 集合，用嚟做粗略嘅語意重疊檢查。"""
+    s = _re.sub(r"\s+", "", s or "")
+    return set(s[i:i + 2] for i in range(len(s) - 1))
+
+
+def _choice_grounded(ground_text, choice, threshold=0.15):
+    """判斷 choice 文字係咪同 ground_text（正文真實尾段）有足夠重疊，
+    用嚟偵測 model 寫嘅選擇有冇同正文結尾脫節。"""
+    if not choice:
+        return False
+    cb = _bigrams(choice)
+    if not cb:
+        return False
+    gb = _bigrams(ground_text)
+    return (len(cb & gb) / len(cb)) >= threshold
+
+
+def _regen_ending_hook(ground_text):
+    """CA/CB 同正文對唔上版時嘅補救：淨係用實際尾段文字，低溫度重新生成
+    NEXT/CA/CB（唔動主文）。失敗就返 None，由呼叫方保留原本輸出。"""
+    client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+    prompt = (
+        "你負責幫網絡小說補一個「下集懸念鉤子」，唔可以自己作新場景。\n"
+        "以下係本集正文最後一段（唯一可以參考嘅內容）：\n"
+        f"「{ground_text}」\n\n"
+        "請輸出三行，格式一字不差、每行三個尖括號：\n"
+        "<<<NEXT: 一句下集懸念種子，20字內，只可以講返上面呢段出現過嘅畫面>>>\n"
+        "<<<CA: 承接呢一刻嘅選擇一，主角一個具體行動，12字內，只可以用上面出現過嘅人物/道具/場景>>>\n"
+        "<<<CB: 承接呢一刻嘅選擇二，同A明顯不同，12字內，只可以用上面出現過嘅人物/道具/場景>>>"
+    )
+    try:
+        resp = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+            max_tokens=200,
+        )
+        _, next_hook, choice_a, choice_b, _ = _parse_episode(resp.choices[0].message.content)
+        if next_hook and choice_a and choice_b:
+            return next_hook, choice_a, choice_b
+    except Exception as e:
+        print(f"[episode] hook 補救 call 失敗（非致命）：{e}")
+    return None
 
 
 def start_new_series(genre_name=None):
@@ -1182,8 +1257,8 @@ def start_new_series(genre_name=None):
     ch = genre.get("channel", "M")
     character = generate_character(ch, genre["name"])
     arc = _pick_arc(ch)
-    unique = _pick_unique_elements(genre["name"])
-    villain = random.choice(FEMALE_VILLAINS if ch == "F" else VILLAINS)
+    unique = _pick_unique_elements(genre["name"], ch)
+    villain = unique["villain"]
     series = {
         "id": "s" + _uuid.uuid4().hex[:5],
         "genre": genre["name"], "channel": ch,
@@ -1262,6 +1337,13 @@ def _generate_and_send_episode(series, ep_num):
         raise RuntimeError(f"單集生成失敗（已重試 3 次）：{last_err}")
 
     clean, next_hook, choice_a, choice_b, ended = _parse_episode(raw)
+    if not ended and choice_a and choice_b:
+        _ground = clean[-300:]
+        if not (_choice_grounded(_ground, choice_a) or _choice_grounded(_ground, choice_b)):
+            print(f"[episode] 系列 {series['id']} 第 {ep_num} 集 choice 同正文唔夾，觸發補救 call")
+            _fix = _regen_ending_hook(_ground)
+            if _fix:
+                next_hook, choice_a, choice_b = _fix
     if ep_num == 1 and not series.get("title"):
         # 取正文第一行做系列標題
         for line in clean.split("\n"):
