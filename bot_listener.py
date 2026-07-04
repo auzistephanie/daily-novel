@@ -695,6 +695,17 @@ def handle_callback(cb):
         answer_callback(cb["id"], "你嘅選擇生效，生成下一集...")
         threading.Thread(target=_run_continue_series, args=(sid, letter), daemon=True).start()
 
+    elif cb_data.startswith("newseries_"):
+        # 格式：newseries_{sid}——嚟自某個系列嘅「換個新故事」，撳咗順便刪走呢個系列
+        sid = cb_data[len("newseries_"):]
+        answer_callback(cb["id"], "開新系列...")
+        try:
+            from utils import delete_series
+            delete_series(sid)
+        except Exception as e:
+            print(f"[newseries] 刪走現有系列失敗（非致命）：{e}")
+        threading.Thread(target=_run_new_series, args=(None,), daemon=True).start()
+
     elif cb_data == "newseries":
         answer_callback(cb["id"], "開新系列...")
         threading.Thread(target=_run_new_series, args=(None,), daemon=True).start()

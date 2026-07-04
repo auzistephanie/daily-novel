@@ -530,6 +530,51 @@ SUSPENSE_HOOKS = [
     "中段有一句話，第一次看以為是閒筆，看完全篇才明白，那句話是整個故事最重要的一句",
 ]
 
+# ── 連載煞停類型（每集輪流唔重複，避免次次都係同一種模式）──────────
+CLIFFHANGER_TYPES = ["秘密揭穿型", "身份曝露型", "抉擇無回頭型", "意外人物型", "死線倒數型", "動作未做型"]
+
+CLIFFHANGER_TYPE_DESC = {
+    "秘密揭穿型":   "一個關鍵秘密／證據即將被攤喺全場面前，只差一步就穿煲",
+    "身份曝露型":   "主角或反派嘅真實身份即將被人認出／揭穿",
+    "抉擇無回頭型": "主角要即刻做一個一旦揀咗就冚唔返轉頭嘅決定，兩條路都有代價",
+    "意外人物型":   "一個關鍵人物突然出現喺主角面前，完全打亂原本局面",
+    "死線倒數型":   "仲有好短時間（幾秒／幾分鐘／一個訊號）就要有結果，主角仲未搞掂",
+    "動作未做型":   "主角眼前有一件具體、逼在眉睫嘅事，下一秒就要出手／開口／做決定",
+}
+
+CLIFFHANGER_DEMOS = {
+    "秘密揭穿型": {
+        "scene": "她盯住對方腰間嗰條皮帶，指紋證據就喺上面，全場等緊佢會唔會出手",
+        "next": "皮帶上嘅證據即將攤喺全場面前",
+        "ca": "當場扯出皮帶證據", "cb": "忍住、上馬贏咗先算賬",
+    },
+    "身份曝露型": {
+        "scene": "老管家嘅手指到咗佢後頸嗰道疤，全場靜晒——嗰道疤只有嫡系血脈先有",
+        "next": "疤痕即將暴露佢嘅真實身份",
+        "ca": "主動掀開衣領露出疤痕", "cb": "轉身避開、假裝冇聽到",
+    },
+    "抉擇無回頭型": {
+        "scene": "律師將兩份文件放喺佢面前——一份放棄股權換自由，一份反擊但可能兩敗俱傷，佢嘅手懸喺半空",
+        "next": "簽邊份文件將決定佢後半生",
+        "ca": "簽落放棄股權嗰份", "cb": "簽落反擊嗰份",
+    },
+    "意外人物型": {
+        "scene": "門「砰」一聲被推開，理應三年前已經死咗嘅前妻，就咁樣企喺門口望住佢",
+        "next": "呢個唔應該出現嘅人即將開口講嘢",
+        "ca": "上前質問她點解仲活着", "cb": "轉身通知保安封鎖現場",
+    },
+    "死線倒數型": {
+        "scene": "拍賣官槌仔舉高，「三、二」——佢望住手機度嗰個仲未過數嘅轉賬，倒數緊最後幾秒",
+        "next": "槌仔落地前，轉賬究竟過唔過到數",
+        "ca": "賭一鋪舉手叫價", "cb": "放棄呢輪、等下一件",
+    },
+    "動作未做型": {
+        "scene": "佢手指扣住扳機，對方就企喺三步之外，全場鴉雀無聲等緊佢下一步",
+        "next": "扳機扣落去定係收手",
+        "ca": "扣落扳機", "cb": "收手、改用其他辦法",
+    },
+}
+
 # 結局結構（明確收尾節奏，杜絕草率結束）
 ENDING_STRUCTURES = [
     "回響呼應型：結尾主動呼應開場某個具體細節（一句話、一個動作、一件物品），讓讀者恍然大悟「原來早有伏筆」，合上手機還在回味",
@@ -629,6 +674,45 @@ def _pick_unique_elements(genre_name="", channel="M"):
         pass
 
     return unique
+
+
+def _pick_episode_hook_elements(channel="M"):
+    """連載每集獨立揀一次「煞停類型」+「懸念素材」，同 _pick_unique_elements 分開，
+    避免影響成個系列固定嘅 setting/writing_style；用返同一個 recent_dna 防重複機制，
+    確保連續幾集唔會用返同一種煞停模式。"""
+    from utils import load_recent_dna, save_recent_dna
+
+    try:
+        recent = load_recent_dna()
+    except Exception:
+        recent = {}
+
+    WINDOW = 5
+
+    def pick_fresh(pool, key):
+        used = set(recent.get(key, []))
+        fresh = [x for x in pool if x not in used]
+        if not fresh:
+            fresh = pool
+        val = random.choice(fresh)
+        lst = recent.get(key, [])
+        if val in lst:
+            lst.remove(val)
+        lst.append(val)
+        recent[key] = lst[-WINDOW:]
+        return val
+
+    picks = {
+        "cliffhanger_type": pick_fresh(CLIFFHANGER_TYPES, "cliffhanger_type"),
+        "suspense_hook":    pick_fresh(SUSPENSE_HOOKS,    "suspense_hook"),
+    }
+
+    try:
+        save_recent_dna(recent)
+    except Exception:
+        pass
+
+    return picks
 
 # ── 爆款標題公式（男女頻共用）──────────────────────────────────────
 TITLE_RULE = """【爆款標題公式 — 必做】
@@ -1112,13 +1196,22 @@ def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
         title_rule = "唔好再寫標題，直接接住上集劇情。"
         word_rule = "1200-1800 字（終集可略長）｜完整結局最少佔本集 30%"
     else:
+        _cliff_type = unique.get("cliffhanger_type") or random.choice(CLIFFHANGER_TYPES)
+        _cliff_desc = CLIFFHANGER_TYPE_DESC.get(_cliff_type, CLIFFHANGER_TYPE_DESC["動作未做型"])
+        _demo = CLIFFHANGER_DEMOS.get(_cliff_type, CLIFFHANGER_DEMOS["動作未做型"])
         ending_rule = (
             "【本集非最終集｜收尾方式最緊要，睇清楚】\n"
             "🚫 嚴禁『決心式／感悟式／總結式』收尾——即係唔可以用『她已經決定了…』"
             "『從今以後…』『這一世她要…』『她再也不是那個…』呢類收束句。呢啲係最終集先用，"
             "非最終集咁樣寫會令讀者以為故事完咗，同下面嘅選擇完全脫節。\n"
-            "✅ 非最終集必須煞停喺一個『動作即將發生、但仲未發生』嘅緊張當下：主角眼前有一件"
-            "具體、逼在眉睫嘅事，下一秒就要出手／開口／做決定，你要喺佢即將動手嗰一刻硬生生煞停。\n"
+            f"【本集指定煞停類型 — 必須用呢種，唔可以自把自為換第二種】{_cliff_type}：{_cliff_desc}\n"
+            "→ 連載最忌次次都用返同一種方式煞停（例如次次都係『動作未做』），讀者睇多幾集會覺得悶、"
+            "無新鮮感就唔會追落去。本集指定咗呢種類型，你要圍繞呢個方向設計本集嘅收尾。\n"
+            f"【本集懸念素材參考 — 可以喺呢個方向度設計呢集嘅剎停位】{unique.get('suspense_hook', '')}\n"
+            f"【賭注升級 — 追唔追得住睇呢度】呢集係第 {ep_num}/{total} 集，本集嘅緊張感／賭注必須比上一集"
+            "更大——讀者要有『比上一集更加驚、更加想知道之後點』嘅感覺，唔可以原地踏步或者比上集弱。\n"
+            "✅ 非最終集必須煞停喺一個高張力當下：主角眼前有一件具體、逼在眉睫嘅事，跟返上面指定嘅煞停類型，"
+            "你要喺最關鍵嗰一刻硬生生煞停。\n"
             "最後一兩段要清楚寫低呢個場景（邊度、面對邊個人、眼前係咩局面），最後一句停喺懸念，"
             "唔好抒情、唔好總結、唔好交代結果。\n"
             "然後兩個選擇 CA/CB，就係主角喺呢個煞停位、面對眼前呢件事嘅兩個唔同下一步動作，"
@@ -1130,9 +1223,9 @@ def _build_episode_prompt(series, ep_num, unique, villain, trending_hint=""):
             "<<<NEXT: 一句下集懸念種子，20字內，必須基於上面SCENE嗰句，唔可以偏離>>>\n"
             "<<<CA: 承接SCENE呢一刻嘅選擇一，主角一個具體行動，12字內，淨係可以用SCENE入面出現過嘅人物/道具/場景>>>\n"
             "<<<CB: 承接SCENE呢一刻嘅選擇二，同A明顯不同，12字內，淨係可以用SCENE入面出現過嘅人物/道具/場景>>>\n"
-            "示範（正文最後一幕：她盯住對方腰間嗰條皮帶，指紋證據就喺上面，全場等緊佢會唔會出手）：\n"
-            "<<<SCENE: 佢盯住對方腰間嗰條皮帶，指紋證據就喺上面>>>\n"
-            "<<<NEXT: 皮帶上嘅證據即將攤喺全場面前>>>\n<<<CA: 當場扯出皮帶證據>>>\n<<<CB: 忍住、上馬贏咗先算賬>>>")
+            f"示範（{_cliff_type}，正文最後一幕：{_demo['scene']}）：\n"
+            f"<<<SCENE: {_demo['scene']}>>>\n"
+            f"<<<NEXT: {_demo['next']}>>>\n<<<CA: {_demo['ca']}>>>\n<<<CB: {_demo['cb']}>>>")
         title_rule = ("首集：正文第一行寫一個爆款系列標題（獨立一行，用標題公式，"
                       "唔好加「第1集」字樣）。" if ep_num == 1
                       else "唔好再寫標題，直接接住上集劇情。")
@@ -1315,7 +1408,18 @@ def _generate_and_send_episode(series, ep_num):
     except Exception as e:
         print(f"[episode] trending 抓取失敗（非致命）：{e}")
 
-    prompt = _build_episode_prompt(series, ep_num, series["dna"], series["villain"], trending_hint)
+    if ep_num < total:
+        # 每集獨立揀一次煞停類型／懸念素材，唔郁 series["dna"] 入面凍結咗嘅 setting/writing_style
+        try:
+            _hook_pick = _pick_episode_hook_elements(ch)
+        except Exception as e:
+            print(f"[episode] hook 元素揀選失敗（非致命）：{e}")
+            _hook_pick = {}
+        _prompt_dna = dict(series["dna"])
+        _prompt_dna.update(_hook_pick)
+    else:
+        _prompt_dna = series["dna"]
+    prompt = _build_episode_prompt(series, ep_num, _prompt_dna, series["villain"], trending_hint)
     client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
     raw = None
@@ -1376,7 +1480,8 @@ def _generate_and_send_episode(series, ep_num):
     )
     _gn = series["genre"]
     # 「換過個」出口：睇完唔啱可以即刻轉新故事（唔追本身就係負評訊號，留存數據會扣低此題材）
-    _switch_btn = {"text": "🎲 換個新故事", "callback_data": "newseries"}
+    # 撳咗會順便刪走現有呢個系列（callback_data 帶 series id，bot_listener 見 newseries_ 前綴）
+    _switch_btn = {"text": "🎲 換個新故事", "callback_data": f"newseries_{series['id']}"}
     _fav_btn = {"text": "⭐ 收藏", "callback_data": f"favx_{_gn}"}
     if is_done:
         # 終集：彈返評分，評整個系列（餵 winner 學習 + 互動率）

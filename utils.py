@@ -330,6 +330,23 @@ def load_series(series_id: str) -> dict:
     return _json.loads(value) if value else {}
 
 
+def delete_series(series_id: str) -> None:
+    """刪走指定連載系列（DEL 個 series:{id} key + 由 ongoing/done 索引 SREM 走）。"""
+    requests.post(
+        f"{_redis_url()}/",
+        headers={**_redis_headers(), "Content-Type": "application/json"},
+        json=["DEL", f"series:{series_id}"],
+        timeout=10,
+    )
+    for idx in ("series:ongoing", "series:done"):
+        requests.post(
+            f"{_redis_url()}/",
+            headers={**_redis_headers(), "Content-Type": "application/json"},
+            json=["SREM", idx, series_id],
+            timeout=10,
+        )
+
+
 def clear_all_ongoing_series() -> int:
     """清走全部仍在追緊嘅連載系列（DEL 每個 series:{id} + 清走 series:ongoing 索引）。
     返回實際清走咗幾多個。"""
