@@ -6,7 +6,7 @@
 
 ## ⚠️ 2026-07-04 起：唔再以 Telegram 為主要出口
 
-新方向係網站產品 **novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。本機位置：公司機（舊）= `daily-novel/novel-web/`；自己機（2026-07-05 搬機重組後）= 獨立 top-level folder `~/novel-web/`）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 08:10 / `novel-ending-generator` 20:09）直接用 Claude 生成內容寫入 Supabase，唔再經呢度嘅 `novel_generator.py` / DeepSeek API / Telegram bot。
+新方向係網站產品 **novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。本機位置：公司機（舊）= `daily-novel/novel-web/`；自己機（2026-07-05 搬機重組後）= 獨立 top-level folder `~/novel-web/`）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 12:30/16:30 / `novel-ending-generator` 17:05；2026-07-05 錯開撞鐘＋加 heartbeat 落 watchdog）直接用 Claude 生成內容寫入 Supabase，唔再經呢度嘅 `novel_generator.py` / DeepSeek API / Telegram bot。
 
 依家呢個 repo（`novel_generator.py`、`bot_listener.py`、Telegram 指令）**未刪**，Stephanie 未話幾時停 bot，但新功能／新故事出口請去 novel-web repo 嘅 `CLAUDE.md` 睇（位置見上）。
 
