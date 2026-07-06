@@ -8,7 +8,7 @@
 
 新方向係網站產品 **novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。**本機位置：現時仍未搬機，novel-web 仍係喺 `daily-novel/novel-web/` 呢個位（未搬去獨立 top-level `~/novel-web/`）——搬機重組計劃暫緩，真正搬咗機先改呢句**）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 12:30/16:30 / `novel-ending-generator` 17:05；2026-07-05 錯開撞鐘＋加 heartbeat 落 watchdog）直接用 Claude 生成內容寫入 Supabase，唔再經呢度嘅 `novel_generator.py` / DeepSeek API / Telegram bot。
 
-依家呢個 repo（`novel_generator.py`、`bot_listener.py`、Telegram 指令）**未刪**，Stephanie 未話幾時停 bot，但新功能／新故事出口請去 novel-web repo 嘅 `CLAUDE.md` 睇（位置見上）。
+依家呢個 repo（`novel_generator.py`、`bot_listener.py`、Telegram 指令）**未刪**，但**已拍板（2026-07-05）：搬機 cutover 日停 bot**（公司機 `launchctl unload com.stephanieau.novel-bot` + 刪 plist，自己機唔裝），觀察兩星期冇掛住就正式標 deprecated。新功能／新故事出口請去 novel-web repo 嘅 `CLAUDE.md` 睇（位置見上）。
 
 ## 📖 文件讀取規則
 
