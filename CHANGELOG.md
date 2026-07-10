@@ -2,6 +2,7 @@
 
 > 唔會自動讀入每次對話 context，需要時先 `read_file`。
 
+- **2026-07-10**：`github_push.py` 修好「push 完 `git status` 仍顯示大量假改動」——script 經 GitHub API 寫 remote、唔 advance 本地 HEAD，令 status 成日同舊 HEAD 比。Fix：push 成功後加 `sync_local_head()`（帶 token fetch + `git reset --mixed` 對齊；token 唔寫檔唔 print、失敗唔阻塞、只郁 HEAD+index）；已清殘留 `.git/index.lock` 並驗證 status 歸零。（novel-web/github_push.py 同步套用）
 - **2026-06-11**：取消每隔一日 9am 自動生成 cron，改為自己選擇時間按需生成
 - **2026-06-11**：刪 6 個男頻冷門類別（醫術流／古言權謀／鑑寶奇才／神豪撒幣／末世崛起／競技熱血）；新增 10 個女頻言情爆款 + channel/weight 加權系統；加爆款標題公式；男女頻分開 prompt 模板。
 - **2026-06-23**：刪甜寵逆襲（男頻，市場飽和）、玄學風水（冷門）；新增漫畫感爽文（M, w2）、重生年代稱霸（M, w2）、懸疑言情（F, w2）——對應 2026 短劇爆款趨勢。
