@@ -4,12 +4,6 @@
 
 > 內容系統詳解拆咗落 `docs/SYSTEMS.md`，按需 read_file。
 
-## ✍️ 寫入分流（MANDATORY — 想更新本檔前先讀）
-
-- **改動記錄／開發史** → root `CHANGELOG.md` **頂部**，唔准 append 落本檔；本檔硬上限 **100 行／6KB**
-- 本檔只准改：路由行、現行規則本身變咗。完整分流表 → `stephanie-personal/docs/ai-governance/04-MAINTENANCE.md` §0
-
-
 ## ⚠️ 2026-07-04 起：唔再以 Telegram 為主要出口
 
 新方向係網站產品 **novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。**本機位置：現時仍未搬機，novel-web 仍係喺 `daily-novel/novel-web/` 呢個位（未搬去獨立 top-level `~/novel-web/`）——搬機重組計劃暫緩，真正搬咗機先改呢句**）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 12:30/16:30 / `novel-ending-generator` 17:05；2026-07-05 錯開撞鐘＋加 heartbeat 落 watchdog）直接用 Claude 生成內容寫入 Supabase，唔再經呢度嘅 `novel_generator.py` / DeepSeek API / Telegram bot。
