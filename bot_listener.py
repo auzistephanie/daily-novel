@@ -926,6 +926,15 @@ def poll():
 
             for update in data.get("result", []):
                 offset = update["update_id"] + 1
+
+                # 只處理本人（TELEGRAM_CHAT_ID）嘅 update，非本人跳過
+                _msg = update.get("message") or update.get("callback_query", {}).get("message") or {}
+                _sender = str(_msg.get("chat", {}).get("id", ""))
+                _allowed = os.getenv("TELEGRAM_CHAT_ID")
+                if not _allowed or _sender != str(_allowed):
+                    log.warning(f"拒絕非授權寄件者: {_sender}")
+                    continue
+
                 trigger = update.get("callback_query", {}).get("data") or update.get("message", {}).get("text", "")
 
                 try:

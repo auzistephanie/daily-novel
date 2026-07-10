@@ -2,6 +2,7 @@
 
 > 唔會自動讀入每次對話 context，需要時先 `read_file`。
 
+- **2026-07-10**：**顧事 House Style（Voice Profile v1）鎖定＋全出口接軌**——Fable session STEP 0 試讀鎖定三聲道：A 快刀流（serial 男頻）／C 夜行者（都市冷幽默第一人稱）／D 拾光人（short 情感，突襲式淚點）；「具體物件驅動」硬規按 Stephanie 要求剔除。正本 `novel-web/VOICE_PROFILE.md`。首批 Fable 6 篇（正本 `novel-web/content/fable_batch_2026-07-10.md`，附連載後續大綱＋分支種子）已入 Supabase `novel_stories`。接軌：① Cowork `novel-story-generator` task prompt 內嵌 Voice Profile 精華＋三聲道分配表（原有類別池／比例／字數／吸引力硬規保留）；② novel-web `endings.ts` 加 `VOICE_RULE` 注入 DeepSeek 結局 system prompt（承接聲道、末句短可獨立引用），syntax 驗證通過，commit a539f37 已 push（Vercel 自動 deploy）。
 - **2026-07-10**：`github_push.py` 修好「push 完 `git status` 仍顯示大量假改動」——script 經 GitHub API 寫 remote、唔 advance 本地 HEAD，令 status 成日同舊 HEAD 比。Fix：push 成功後加 `sync_local_head()`（帶 token fetch + `git reset --mixed` 對齊；token 唔寫檔唔 print、失敗唔阻塞、只郁 HEAD+index）；已清殘留 `.git/index.lock` 並驗證 status 歸零。（novel-web/github_push.py 同步套用）
 - **2026-06-11**：取消每隔一日 9am 自動生成 cron，改為自己選擇時間按需生成
 - **2026-06-11**：刪 6 個男頻冷門類別（醫術流／古言權謀／鑑寶奇才／神豪撒幣／末世崛起／競技熱血）；新增 10 個女頻言情爆款 + channel/weight 加權系統；加爆款標題公式；男女頻分開 prompt 模板。
