@@ -29,3 +29,6 @@ __pycache__/
 
 # novel-web 係獨立 project（自己 git repo + 自己 GitHub repo），唔屬於 daily-novel 版本控制
 novel-web/
+
+# staged-for-deletion (never push)
+_to_delete/
