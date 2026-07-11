@@ -1,6 +1,6 @@
-# CLAUDE.md — 每日小說生成器
+# CLAUDE.md — novel-web（網站小說產品）
 
-按需生成中文網絡爽文（自己揀時間生成，唔自動排程），推送 Telegram。DeepSeek-V3 生成，支援評分回饋、加權選類、連載追更 + 讀者選擇分支。
+Repo 核心 = 網站產品 **novel-web**（Next.js + Supabase）：故事牆 + 登入 + 個人化結局。舊 Telegram 小說 bot 已於 **2026-07-11 移除**（→ `_to_delete/`），正式 deprecated。
 
 > 內容系統詳解拆咗落 `docs/SYSTEMS.md`，按需 read_file。
 
@@ -10,37 +10,26 @@
 - 本檔只准改：路由行、現行規則本身變咗。完整分流表 → `stephanie-personal/docs/ai-governance/04-MAINTENANCE.md` §0
 
 
-## ⚠️ 2026-07-04 起：唔再以 Telegram 為主要出口
+## 產品出口 = novel-web
 
-新方向係網站產品 **novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。**本機位置：現時仍未搬機，novel-web 仍係喺 `daily-novel/novel-web/` 呢個位（未搬去獨立 top-level `~/novel-web/`）——搬機重組計劃暫緩，真正搬咗機先改呢句**）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 12:30/16:30 / `novel-ending-generator` 17:05；2026-07-05 錯開撞鐘＋加 heartbeat 落 watchdog）直接用 Claude 生成內容寫入 Supabase，唔再經呢度嘅 `novel_generator.py` / DeepSeek API / Telegram bot。
+**novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。本機位置仍係 `daily-novel/novel-web/`，未搬去獨立 `~/novel-web/`——搬機重組暫緩，搬咗先改）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 12:30/16:30 · `novel-ending-generator` 17:05）直接用 Claude 生成內容寫入 Supabase。新功能／新故事出口去 novel-web 自己嘅 `CLAUDE.md`。
 
-依家呢個 repo（`novel_generator.py`、`bot_listener.py`、Telegram 指令）**未刪**，但**已拍板（2026-07-05）：搬機 cutover 日停 bot**（公司機 `launchctl unload com.stephanieau.novel-bot` + 刪 plist，自己機唔裝），觀察兩星期冇掛住就正式標 deprecated。新功能／新故事出口請去 novel-web repo 嘅 `CLAUDE.md` 睇（位置見上）。
+## 舊 Telegram bot（2026-07-11 已移除）
+
+`novel_generator.py`／`lit_generator.py`／`bot_listener.py`／`utils.py`／`webhook_server.py`／`check_errors.py`／`sync_commands.py` 等已搬去 `_to_delete/bot-removal-2026-07-11/`（磁碟保留、已 untrack + gitignore）。LaunchAgent `com.stephanieau.novel-bot` 應 `launchctl unload` + 刪 plist。翻查舊邏輯去 `_to_delete/`。
+
+## 推送本 repo
+
+`python3 github_push.py "<commit message>"`（GitHub API push，PAT in `.env`；已尊重 `.gitignore`，`_to_delete/` 唔會上）。novel-web 有自己嘅 `push-novel-web.sh` 獨立部署。
 
 ## 📖 文件讀取規則
 
 | 需要嘅資訊 | 讀邊份 |
 |---|---|
-| 類別系統（28類/加權）、分頻寫法、連載追更（arcs/callbacks/Redis keys）、留存數據系統 | `docs/SYSTEMS.md` |
-| 改版歷史 | `CHANGELOG.md`（唔需要每次讀）|
-| AI 調度/驗證/判斷制度（全 repo 共用） | `stephanie-personal/docs/ai-governance/`（見下）|
-
-## 核心檔案
-
-- `novel_generator.py` — 主腳本：類別池、主角生成、故事生成、加推、連載（`SERIES_ARCS`、`start_new_series` 等）
-- `bot_listener.py` — Telegram 後台服務（按鈕 / 指令互動）
-- `utils.py` — genre data I/O、Telegram 發送、series/metrics Redis I/O
-- `genre_data.json` — 評分與 winners 記憶（本地，唔 commit）· `.env` — API keys（唔 commit）
-- `github_push.py` — GitHub API push（PAT in .env），重大更新後自動執行：`python3 github_push.py "<commit message>"`
-- `sync_commands.py` — 同步 Telegram「/」指令 menu（setMyCommands），**改完指令後即刻跑，毋須重啟 bot**：`python3 sync_commands.py`。注意：menu 顯示同指令處理係兩件事——新指令要真正有反應仍要重啟 bot 載新 code
-
-## Bot 指令
-
-`/series` 連載（開新／續集）· `/now` 即時單篇 · `/browse` 揀類別 · `/more` 高分加推 · `/stats` 評分＋留存面板 · `/library` · `/history` 近 7 日 · `/help`
-
-## 自動化
-
-- 已取消自動 cron 生成，按需執行 `python3 novel_generator.py` 或 Telegram `/now`
-- LaunchAgent：`com.stephanieau.novel-bot.plist`（Bot 常駐，crash 自動重啟）
+| 產品：故事牆 / 結局 / Supabase | `novel-web/CLAUDE.md` |
+| 歷史：類別系統、分頻、連載、留存數據 | `docs/SYSTEMS.md`（bot 年代參考）|
+| 改版歷史 | `CHANGELOG.md` |
+| AI 調度/驗證/判斷制度（全 repo 共用） | `stephanie-personal/docs/ai-governance/` |
 
 ## AI 制度（全 repo 共用正本）
 
