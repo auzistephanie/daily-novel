@@ -8,14 +8,17 @@ video_gen.py — 讀 storyboard JSON,逐鏡call fal.ai生成短劇片段
     python3 video_gen.py storyboards/xxx.json --shot 3     # 淨生成第3鏡(慳成本試單鏡)
 
 需要:
-    pip install fal-client
-    .env 入面要有 FAL_KEY=<你嘅 fal.ai API key>
+    pip install fal-client python-dotenv
+    .env 入面要有 FAL_KEY=<你嘅 fal.ai API key>(格式 "keyid:keysecret")
 
 流程:
     1. 讀 storyboard JSON 嘅 shots[]
-    2. 每個 shot 用 characters[] 嘅 ref_prompt 拼埋 shot 嘅 video_prompt
-    3. call fal.ai(預設 fal-ai/ltx-2.3/image-to-video,Fast tier)生成單鏡
+    2. 每個 shot 用 characters[] 嘅 ref_prompt 拼埋 shot 嘅 video_prompt 做完整prompt
+    3. call fal.ai(fal-ai/ltx-2.3/text-to-video/fast — 1080p $0.04/秒起,原生音效)生成單鏡
     4. 存落 output/<story_id>/shot_<shot_id>.mp4
+
+⚠️ duration 只接受 fal.ai 嘅枚舉值(6/8/10/12/14/16/18/20秒),storyboard 入面嘅 duration_sec
+   會自動round去最近嘅有效值(最少6秒)。
 """
 import argparse
 import json
@@ -29,12 +32,21 @@ try:
 except ImportError:
     pass
 
-FAL_MODEL = "fal-ai/ltx-2.3/image-to-video"  # Fast tier,$0.04/秒起(1080p)
+FAL_MODEL = "fal-ai/ltx-2.3/text-to-video/fast"  # Fast tier,$0.04/秒起(1080p),原生音效
+VALID_DURATIONS = [6, 8, 10, 12, 14, 16, 18, 20]
 
 
 def load_storyboard(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def snap_duration(sec):
+    """fal.ai duration 只接受枚舉值,揀最接近但唔細過原定嘅"""
+    for v in VALID_DURATIONS:
+        if v >= sec:
+            return v
+    return VALID_DURATIONS[-1]
 
 
 def build_full_prompt(shot, characters_by_id):
@@ -49,11 +61,20 @@ def build_full_prompt(shot, characters_by_id):
     return " | ".join(prompt_parts)
 
 
-def generate_shot(shot, full_prompt, out_dir, fal_key, dry_run=False):
+def generate_shot(shot, full_prompt, out_dir, fal_key, aspect_ratio="9:16", dry_run=False):
     out_path = out_dir / f"shot_{shot['shot_id']:02d}.mp4"
+    duration = snap_duration(shot["duration_sec"])
+    arguments = {
+        "prompt": full_prompt,
+        "duration": duration,
+        "resolution": "1080p",
+        "aspect_ratio": aspect_ratio,
+        "generate_audio": True,
+    }
+
     if dry_run:
         print(f"[DRY-RUN] shot {shot['shot_id']} ({shot['scene']}) -> {out_path}")
-        print(f"          duration={shot['duration_sec']}s")
+        print(f"          arguments={json.dumps(arguments, ensure_ascii=False)}")
         print(f"          prompt={full_prompt[:160]}...")
         return
 
@@ -62,10 +83,7 @@ def generate_shot(shot, full_prompt, out_dir, fal_key, dry_run=False):
     os.environ["FAL_KEY"] = fal_key
     result = fal_client.subscribe(
         FAL_MODEL,
-        arguments={
-            "prompt": full_prompt,
-            "duration": shot["duration_sec"],
-        },
+        arguments=arguments,
         with_logs=True,
     )
     video_url = result.get("video", {}).get("url")
@@ -86,6 +104,7 @@ def main():
 
     board = load_storyboard(args.storyboard)
     story_id = board["source"]["story_id"]
+    aspect_ratio = board.get("episode", {}).get("aspect_ratio", "9:16")
     characters_by_id = {c["id"]: c for c in board["characters"]}
 
     out_dir = Path(__file__).parent / "output" / story_id
@@ -105,7 +124,7 @@ def main():
 
     for shot in shots:
         full_prompt = build_full_prompt(shot, characters_by_id)
-        generate_shot(shot, full_prompt, out_dir, fal_key, dry_run=args.dry_run)
+        generate_shot(shot, full_prompt, out_dir, fal_key, aspect_ratio=aspect_ratio, dry_run=args.dry_run)
 
     print(f"\n完成 {len(shots)} 個鏡頭 (story: {board['source']['title']})")
 

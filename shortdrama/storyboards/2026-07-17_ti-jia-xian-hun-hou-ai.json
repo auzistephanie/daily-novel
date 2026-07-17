@@ -10,9 +10,9 @@
   },
   "episode": {
     "episode_no": 1,
-    "target_duration_sec": 75,
+    "target_duration_sec": 60,
     "aspect_ratio": "9:16",
-    "model_recommendation": "fal-ai/ltx-2.3/image-to-video (Fast, 1080p) — 對白多、要原生音效對嘴，$0.04/秒起"
+    "model_recommendation": "fal-ai/ltx-2.3/text-to-video/fast — 1080p $0.04/秒起,原生音效+對嘴,duration只接受6/8/10...20秒枚舉值,所以每鏡最少6秒"
   },
   "characters": [
     {
@@ -37,7 +37,7 @@
       "dialogue": "",
       "vo_or_sfx": "司儀畫外音：「新郎新娘，顧知言、沈晏，一鞠躬——」",
       "video_prompt": "wide shot, traditional Chinese ancestral hall wedding ceremony, bride in red gown with red veil lifted slightly by wind, groom in dark mandarin-collar suit standing beside her, warm red lanterns, soft cinematic light, slow push-in",
-      "duration_sec": 5,
+      "duration_sec": 6,
       "bgm": "低沉絃樂，隱約不安"
     },
     {
@@ -48,7 +48,7 @@
       "dialogue": "重來一次也沒關係。",
       "vo_or_sfx": "",
       "video_prompt": "extreme close-up on groom's face, he leans slightly toward the bride and whispers, calm restrained expression, only she can hear, shallow depth of field, warm candle light",
-      "duration_sec": 4,
+      "duration_sec": 6,
       "bgm": "絃樂轉輕"
     },
     {
@@ -59,7 +59,7 @@
       "dialogue": "",
       "vo_or_sfx": "司儀畫外音（第二次，冇再喊錯）",
       "video_prompt": "medium two-shot, bride and groom bow to each other completing the ceremony, red confetti falling softly, warm golden light",
-      "duration_sec": 4,
+      "duration_sec": 6,
       "bgm": "絃樂漸強，喜慶但帶一絲哀愁"
     },
     {
@@ -70,7 +70,7 @@
       "dialogue": "",
       "vo_or_sfx": "",
       "video_prompt": "medium shot, bride sitting alone in dim wedding chamber late at night, red candles flickering, contemplative posture, soft shadows, melancholic atmosphere",
-      "duration_sec": 5,
+      "duration_sec": 6,
       "bgm": "夜靜，鋼琴單音"
     },
     {
@@ -81,7 +81,7 @@
       "dialogue": "",
       "vo_or_sfx": "門聲",
       "video_prompt": "medium shot, groom enters the dim room holding an unopened box of wedding candy, places it gently on the dressing table, door creak sound",
-      "duration_sec": 4,
+      "duration_sec": 6,
       "bgm": "鋼琴延續"
     },
     {
@@ -114,7 +114,7 @@
       "dialogue": "",
       "vo_or_sfx": "",
       "video_prompt": "extreme close-up on two hands, groom places a small repaired hairpin into the bride's open palm, visible fine soldered crack line catching the light, slow motion, intimate framing",
-      "duration_sec": 5,
+      "duration_sec": 6,
       "bgm": "情緒堆疊，弦樂漸強"
     },
     {
@@ -125,7 +125,7 @@
       "dialogue": "",
       "vo_or_sfx": "",
       "video_prompt": "close-up on bride's face, eyes welling with realization and suppressed emotion, hand trembling slightly as she holds the hairpin, no crying shown directly, restrained emotional acting",
-      "duration_sec": 5,
+      "duration_sec": 6,
       "bgm": "弦樂高點"
     },
     {
@@ -136,14 +136,16 @@
       "dialogue": "沈晏，今天司儀喊的，其實是我的名字。",
       "vo_or_sfx": "",
       "video_prompt": "close-up shot, bride pins the hairpin back into her hair, lifts her chin and looks directly at the groom with quiet resolve, warm golden light on her face, final line delivered with native lip-sync, hold on her expression as it fades to black",
-      "duration_sec": 5,
+      "duration_sec": 6,
       "bgm": "弦樂收束，留一個音"
     }
   ],
   "notes": [
-    "全片10鏡,約49秒素材(每鏡加0.5-1秒轉場預計實際成片55-65秒),屬單集試跑範圍(建議10-15鏡/2分鐘)之內,想再豐富可拆多2-3個過場鏡",
-    "對白鏡(2/6/10)建議用LTX-2.3原生音畫同步,慳返手動對嘴",
+    "全片10鏡,每鏡6秒(fal.ai LTX-2.3 duration只接受6/8/10...20秒枚舉值,已由原本4-6秒不等調整做統一6秒)=60秒,單集試跑範圍(建議10-15鏡/2分鐘)之內",
+    "用text-to-video/fast endpoint(唔使image_url),靠character ref_prompt+場景prompt直接生成,未做角色參考圖鎖樣——多鏡之間人物樣貌可能有少少飄移,想要嚴格連戲要另外train LoRA或者用image-to-video+固定参考圖",
+    "對白鏡(2/6/10)已set generate_audio=true,靠LTX-2.3原生音畫同步,慳返手動對嘴",
     "flashback鏡(7)色調要同主線分開(desaturated/warm nostalgic),方便觀眾一睇就知係回憶",
-    "Voice D house rule 已套用:情緒用動作代替(手震/別髮夾),唔直寫「佢好感動」;尾句保留原文金句,可獨立引用"
+    "Voice D house rule 已套用:情緒用動作代替(手震/別髮夾),唔直寫「佢好感動」;尾句保留原文金句,可獨立引用",
+    "成本估算:10鏡 x 6秒 x $0.04/秒(Fast 1080p) = $2.4美金"
   ]
 }
