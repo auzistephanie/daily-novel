@@ -1,0 +1,149 @@
+{
+  "source": {
+    "story_id": "3d98fe2f-0012-4728-bc67-60533fae70a6",
+    "supabase_table": "novel_stories",
+    "genre": "替嫁先婚後愛",
+    "story_type": "short",
+    "voice_profile": "D",
+    "title": "我替姐姐嫁進沈家那天,他喊錯的名字其實是我的",
+    "protagonist": "顧念之"
+  },
+  "episode": {
+    "episode_no": 1,
+    "target_duration_sec": 75,
+    "aspect_ratio": "9:16",
+    "model_recommendation": "fal-ai/ltx-2.3/image-to-video (Fast, 1080p) — 對白多、要原生音效對嘴，$0.04/秒起"
+  },
+  "characters": [
+    {
+      "id": "gu_nianzhi",
+      "name": "顧念之",
+      "role": "女主角",
+      "ref_prompt": "young Chinese woman, early 20s, delicate soft features, long dark hair, wearing a red traditional Chinese wedding gown (秀禾服) with intricate gold embroidery, gentle melancholic expression, cinematic close-up lighting, photorealistic"
+    },
+    {
+      "id": "shen_yan",
+      "name": "沈晏",
+      "role": "男主角",
+      "ref_prompt": "young Chinese man, late 20s, composed low-key expression, sharp jawline, wearing a dark mandarin-collar groom's suit, calm and restrained demeanor, cinematic lighting, photorealistic"
+    }
+  ],
+  "shots": [
+    {
+      "shot_id": 1,
+      "scene": "祠堂婚禮",
+      "shot_type": "遠景 (wide)",
+      "characters": ["gu_nianzhi", "shen_yan"],
+      "dialogue": "",
+      "vo_or_sfx": "司儀畫外音：「新郎新娘，顧知言、沈晏，一鞠躬——」",
+      "video_prompt": "wide shot, traditional Chinese ancestral hall wedding ceremony, bride in red gown with red veil lifted slightly by wind, groom in dark mandarin-collar suit standing beside her, warm red lanterns, soft cinematic light, slow push-in",
+      "duration_sec": 5,
+      "bgm": "低沉絃樂，隱約不安"
+    },
+    {
+      "shot_id": 2,
+      "scene": "祠堂婚禮",
+      "shot_type": "特寫 (close-up)",
+      "characters": ["shen_yan"],
+      "dialogue": "重來一次也沒關係。",
+      "vo_or_sfx": "",
+      "video_prompt": "extreme close-up on groom's face, he leans slightly toward the bride and whispers, calm restrained expression, only she can hear, shallow depth of field, warm candle light",
+      "duration_sec": 4,
+      "bgm": "絃樂轉輕"
+    },
+    {
+      "shot_id": 3,
+      "scene": "祠堂婚禮",
+      "shot_type": "中景 (medium)",
+      "characters": ["gu_nianzhi", "shen_yan"],
+      "dialogue": "",
+      "vo_or_sfx": "司儀畫外音（第二次，冇再喊錯）",
+      "video_prompt": "medium two-shot, bride and groom bow to each other completing the ceremony, red confetti falling softly, warm golden light",
+      "duration_sec": 4,
+      "bgm": "絃樂漸強，喜慶但帶一絲哀愁"
+    },
+    {
+      "shot_id": 4,
+      "scene": "新房夜晚",
+      "shot_type": "中景 (medium)",
+      "characters": ["gu_nianzhi"],
+      "dialogue": "",
+      "vo_or_sfx": "",
+      "video_prompt": "medium shot, bride sitting alone in dim wedding chamber late at night, red candles flickering, contemplative posture, soft shadows, melancholic atmosphere",
+      "duration_sec": 5,
+      "bgm": "夜靜，鋼琴單音"
+    },
+    {
+      "shot_id": 5,
+      "scene": "新房夜晚",
+      "shot_type": "中景 (medium)",
+      "characters": ["shen_yan"],
+      "dialogue": "",
+      "vo_or_sfx": "門聲",
+      "video_prompt": "medium shot, groom enters the dim room holding an unopened box of wedding candy, places it gently on the dressing table, door creak sound",
+      "duration_sec": 4,
+      "bgm": "鋼琴延續"
+    },
+    {
+      "shot_id": 6,
+      "scene": "新房夜晚",
+      "shot_type": "雙人中景 (two-shot)",
+      "characters": ["gu_nianzhi", "shen_yan"],
+      "dialogue": "你不驚訝？ / 驚訝什麼？",
+      "vo_or_sfx": "",
+      "video_prompt": "medium two-shot, bride and groom seated facing each other in dim candlelight, tense quiet dialogue exchange, subtle facial micro-expressions, native lip-sync",
+      "duration_sec": 6,
+      "bgm": "鋼琴止，留白"
+    },
+    {
+      "shot_id": 7,
+      "scene": "三年前回憶（後院）",
+      "shot_type": "回憶畫面 (flashback, soft focus)",
+      "characters": ["gu_nianzhi"],
+      "dialogue": "",
+      "vo_or_sfx": "沈晏畫外音：「三年前，顧家老宅辦壽宴，有個女孩蹲在後院，把自己摔碎的髮夾一片一片撿起來……」",
+      "video_prompt": "flashback sequence, warm nostalgic desaturated color grading, teenage girl crouching in a courtyard, carefully picking up broken hairpin pieces one by one, soft afternoon light, wide-to-close push in",
+      "duration_sec": 6,
+      "bgm": "懷舊絃樂，溫暖"
+    },
+    {
+      "shot_id": 8,
+      "scene": "新房夜晚",
+      "shot_type": "大特寫 (extreme close-up)",
+      "characters": ["gu_nianzhi", "shen_yan"],
+      "dialogue": "",
+      "vo_or_sfx": "",
+      "video_prompt": "extreme close-up on two hands, groom places a small repaired hairpin into the bride's open palm, visible fine soldered crack line catching the light, slow motion, intimate framing",
+      "duration_sec": 5,
+      "bgm": "情緒堆疊，弦樂漸強"
+    },
+    {
+      "shot_id": 9,
+      "scene": "新房夜晚",
+      "shot_type": "特寫 (close-up)",
+      "characters": ["gu_nianzhi"],
+      "dialogue": "",
+      "vo_or_sfx": "",
+      "video_prompt": "close-up on bride's face, eyes welling with realization and suppressed emotion, hand trembling slightly as she holds the hairpin, no crying shown directly, restrained emotional acting",
+      "duration_sec": 5,
+      "bgm": "弦樂高點"
+    },
+    {
+      "shot_id": 10,
+      "scene": "新房夜晚",
+      "shot_type": "特寫 (close-up)",
+      "characters": ["gu_nianzhi"],
+      "dialogue": "沈晏，今天司儀喊的，其實是我的名字。",
+      "vo_or_sfx": "",
+      "video_prompt": "close-up shot, bride pins the hairpin back into her hair, lifts her chin and looks directly at the groom with quiet resolve, warm golden light on her face, final line delivered with native lip-sync, hold on her expression as it fades to black",
+      "duration_sec": 5,
+      "bgm": "弦樂收束，留一個音"
+    }
+  ],
+  "notes": [
+    "全片10鏡,約49秒素材(每鏡加0.5-1秒轉場預計實際成片55-65秒),屬單集試跑範圍(建議10-15鏡/2分鐘)之內,想再豐富可拆多2-3個過場鏡",
+    "對白鏡(2/6/10)建議用LTX-2.3原生音畫同步,慳返手動對嘴",
+    "flashback鏡(7)色調要同主線分開(desaturated/warm nostalgic),方便觀眾一睇就知係回憶",
+    "Voice D house rule 已套用:情緒用動作代替(手震/別髮夾),唔直寫「佢好感動」;尾句保留原文金句,可獨立引用"
+  ]
+}
