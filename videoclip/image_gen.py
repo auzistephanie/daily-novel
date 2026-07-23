@@ -17,6 +17,7 @@ image_gen.py — 讀 beats JSON,逐段用 Cloudflare Workers AI(免費層)生成
     圖用 episode.style_suffix 統一畫風 + protagonist_lock 描述保持主角一致(免費 model 冇
     真正嘅 character lock,靠一致描述詞 + 固定 seed 頂住,多鏡之間樣貌仍可能有少少漂移)。
 """
+from __future__ import annotations  # 兼容 Mac 系統 python3.9(冇 PEP604 `X | None`)
 import argparse
 import json
 import os

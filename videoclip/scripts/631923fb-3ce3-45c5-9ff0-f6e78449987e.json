@@ -1,0 +1,76 @@
+{
+  "source": {
+    "story_id": "631923fb-3ce3-45c5-9ff0-f6e78449987e",
+    "supabase_table": "novel_stories",
+    "genre": "追妻火葬場",
+    "story_type": "short",
+    "title": "離婚協議簽完那晚，他訂的還是我愛吃的那家酸菜魚",
+    "protagonist": "林淮溪",
+    "selection_notes": "選材三準則評分:①具體道具貫穿(酸菜魚店/溫水杯/離婚協議書)✅ ②情感靠場面動作(記得喜好/每月來吃/撕協議)唔靠揭盅反轉✅ ③情節密度低,一晚一場景,7鏡交代得晒✅"
+  },
+  "episode": {
+    "target_duration_sec": 90,
+    "aspect_ratio": "9:16",
+    "seed": 51204,
+    "protagonist_lock": "the SAME two people in every shot showing them: the woman is age 28, oval face, delicate features, tired reddish eyes, straight shoulder-length black hair worn down, fair skin, wearing a beige trench coat over a grey knit sweater; the man is age 30, short neat dark hair, sharp jawline, wearing a dark grey tailored suit with the tie loosened, a calm but weary expression",
+    "style_suffix": "cinematic photography, 85mm lens, shallow depth of field, warm nostalgic color palette contrasted with cool blue rain-lit exteriors, film grain, photorealistic, vertical 9:16 composition"
+  },
+  "beats": [
+    {
+      "beat_id": 1,
+      "camera": "zoom_in",
+      "shot_type": "close-up",
+      "narration": "離婚協議書簽完最後一個字，林淮溪的手還是抖了一下。鋼筆尖洇出一小團墨漬，陸時安沒說話，只是把協議書輕輕收進公文包。",
+      "image_prompt": "Close-up shot, slightly high angle. A young woman's trembling hand rests on a signed divorce document on a dark wood table, a small ink blot spreading beside her signature, her expression tense and hollow. A man's hand quietly slides the document into a leather briefcase beside her. Soft warm desk lamp light, dim law office interior fading into shadow behind them.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 2,
+      "camera": "pan_right",
+      "shot_type": "medium",
+      "narration": "外面在下雨，陸時安送她。車裡沉默，雨刷來回擺動，車子卻拐進了她大學時代常去的那條巷子。",
+      "image_prompt": "Medium shot, eye-level, through a rain-streaked car window. She sits quietly in the passenger seat, staring out at blurred neon lights, a distant unreadable expression. The man drives beside her in profile, eyes fixed ahead, jaw tense with quiet resolve. Rain trails glisten under passing streetlights, cool blue-toned night lighting.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 3,
+      "camera": "zoom_out",
+      "shot_type": "wide",
+      "narration": "巷口那家酸菜魚店，招牌昏黃依舊。老闆一看陸時安就喊:「老位置，一份不辣的酸菜魚，多加酸筍，不要香菜。」",
+      "image_prompt": "Wide shot, eye-level. A small restaurant storefront at night, a warm yellow neon sign glowing above a rusted tin awning, rain still falling lightly outside. The man holds the door open for her as an old shopkeeper waves them toward a familiar corner table. Warm amber interior light spilling onto the wet pavement, cozy nostalgic atmosphere.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 4,
+      "camera": "pan_left",
+      "shot_type": "close-up",
+      "narration": "桌上那杯已經倒好的溫水，不是冰的。她想起結婚第一年，自己說過腸胃不好，之後他倒水前，都會先用手背試溫度。",
+      "image_prompt": "Close-up shot, slightly overhead. A glass of lukewarm water sits on a worn restaurant table, condensation faint on the glass, her fingers resting near it with a wistful realization dawning in her eyes. Warm amber lamp light reflecting softly off the water's surface, shallow focus on her hand and the glass.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 5,
+      "camera": "pan_up",
+      "shot_type": "medium",
+      "narration": "「這三年，」陸時安聲音有點啞，「我每個月都會來吃一次。」他低頭苦笑，「結婚以後，才知道自己有多不會過日子。」",
+      "image_prompt": "Medium shot, eye-level, slightly low angle. The man sits across the table, head lowered, a self-deprecating faint smile masking deep regret in his eyes, hands folded tightly. Warm dim restaurant lighting casts soft shadows across his face, steam faintly rising from a dish just out of frame.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 6,
+      "camera": "zoom_in",
+      "shot_type": "close-up",
+      "narration": "熱氣模糊了兩人之間的距離。她夾了一筷子魚肉，眼淚毫無預兆地掉進碗裡。「你根本不是不記得，你什麼都記得，你只是不說。」",
+      "image_prompt": "Close-up shot, eye-level. A tear falls silently into a bowl of steaming fish soup held in her hands, her eyes glistening with overwhelmed emotion, lips trembling as she speaks. Warm golden steam rising between them, soft blurred restaurant background, intimate shallow depth of field.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 7,
+      "camera": "zoom_out",
+      "shot_type": "medium",
+      "narration": "陸時安把那份離婚協議，一頁一頁慢慢撕成兩半。紙屑落在湯汁旁邊。兩人相視而笑，眼眶卻都紅著——那晚的酸菜魚，是遲來三年的告白。",
+      "image_prompt": "Medium shot, eye-level. The man slowly tears a document in half over the table, torn paper scraps scattering beside a steaming bowl of fish soup, both of them breaking into a tearful relieved smile at once. Warm golden restaurant light glowing around them, joyful bittersweet atmosphere, soft bokeh of the old shop in the background.",
+      "has_protagonist": true
+    }
+  ]
+}

@@ -19,6 +19,7 @@ edge-tts 底層 aiohttp 預設唔會讀 https_proxy 環境變數,直連 speech.p
     3. 用 mutagen 量返實際秒數,寫入 output/<story_id>/durations.json
        (assemble.py 靠呢個檔知道每段 Ken Burns 該做幾長)
 """
+from __future__ import annotations  # 兼容 Mac 系統 python3.9(冇 PEP604 `X | None`)
 import argparse
 import asyncio
 import json

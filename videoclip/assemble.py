@@ -14,6 +14,7 @@ assemble.py — 將 images/ + 旁白mp3 + durations.json 用 ffmpeg 砌做逐段
     <story_id>/beats/beat_NN.mp4 — 每段獨立片(運鏡 + 燒字幕 + 光效 + 配旁白)
     <story_id>/final.mp4 — 跟 beat 次序併埋嘅成品(過黑轉場,crf25 ~15MB)
 """
+from __future__ import annotations  # 兼容 Mac 系統 python3.9(冇 PEP604 `X | None`)
 import argparse
 import json
 import shutil
