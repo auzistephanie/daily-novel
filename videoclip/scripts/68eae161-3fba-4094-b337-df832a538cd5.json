@@ -1,0 +1,76 @@
+{
+  "source": {
+    "story_id": "68eae161-3fba-4094-b337-df832a538cd5",
+    "supabase_table": "novel_stories",
+    "genre": "職場逆襲",
+    "story_type": "short",
+    "title": "茶水間那台舊咖啡機，替我說出了辭職都沒敢說的話",
+    "protagonist": "林雨桐",
+    "selection_notes": "選材三準則評分:①具體道具貫穿(咖啡機/紙條/辭職信)✅ ②情感靠場面動作唔靠揭底反轉✅ ③情節密度低,7鏡交代得晒✅"
+  },
+  "episode": {
+    "target_duration_sec": 90,
+    "aspect_ratio": "9:16",
+    "seed": 68337,
+    "protagonist_lock": "the SAME young Chinese woman in every shot: age 25, round soft face, warm dark-brown almond-shaped eyes, thin natural eyebrows, fair skin with light natural makeup, a small mole under her left eye, shoulder-length straight black hair with a center part, wearing a beige knit cardigan over a white blouse",
+    "style_suffix": "cinematic photography, 85mm lens, shallow depth of field, warm muted office color palette with warm key light and cool shadows, film grain, photorealistic, vertical 9:16 composition"
+  },
+  "beats": [
+    {
+      "beat_id": 1,
+      "camera": "zoom_in",
+      "shot_type": "medium",
+      "narration": "早上八點五十六分,林雨桐把辭職信摺成方塊,塞進外套最深的口袋。茶水間那台老咖啡機又壞了,沒有人在意。",
+      "image_prompt": "Medium shot, eye-level. She stands alone in a small office pantry in the early morning, quietly folding a white letter into the deepest pocket of her jacket, a determined but weary expression. An old yellowed drip coffee machine sits on the counter beside her. Quiet empty office softly blurred in the background.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 2,
+      "camera": "pan_right",
+      "shot_type": "medium",
+      "narration": "三個月前她來到這座城市,提了十二個提案,一個都沒有進過會議室。組長那句「再說」,一說就是三個月。",
+      "image_prompt": "Medium shot, eye-level. She sits alone at her office desk in the evening, a thick stack of rejected proposal documents in front of her, chin resting on one hand, a tired disheartened look in her eyes. A dim open-plan office with empty desks stretches behind her.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 3,
+      "camera": "pan_up",
+      "shot_type": "medium",
+      "narration": "每晚十一點,她都會打電話回家,說「這邊挺好的」。掛掉電話,她把當天被略過的發言,在心裡重新說一遍。",
+      "image_prompt": "Medium shot, high angle. She lies curled on a small bed in a tiny rented room at night, holding a phone loosely against her chest, staring at the ceiling with a lonely faraway expression. City lights glow softly through the window, a single warm bedside lamp lighting her face.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 4,
+      "camera": "zoom_out",
+      "shot_type": "medium",
+      "narration": "上週五,她聽見組長在電話裡說——新來那個,能力普通,留著也是浪費名額。她低頭喝完那杯續了三次的美式,甜得發苦。",
+      "image_prompt": "Medium shot, eye-level. She stands at the edge of a lively office celebration, holding a white paper coffee cup with both hands, eyes lowered, a quiet suppressed sadness on her face, lips pressed. Warm golden party lights and softly blurred laughing colleagues fill the deep background bokeh; she is the only still, isolated figure.",
+      "has_protagonist": true
+    },
+    {
+      "beat_id": 5,
+      "camera": "pan_left",
+      "shot_type": "close-up",
+      "narration": "今天,她想最後一次修好那台咖啡機,給這三個月留一個乾淨的收尾。拆開機身側板,一張泛黃的紙條,壓在濾網底下。",
+      "image_prompt": "Close-up shot. A pair of hands open the side panel of an old coffee machine with a small flashlight, discovering a folded yellowed paper note hidden under the filter inside the machine. Soft morning light in the office pantry, warm and quiet, shallow focus on the note.",
+      "has_protagonist": false
+    },
+    {
+      "beat_id": 6,
+      "camera": "pan_down",
+      "shot_type": "extreme close-up",
+      "narration": "我不是天才,我只是每天多做一點沒人看見的事。如果有一天你也想放棄,記得——沒人看見,不代表沒人受益。",
+      "image_prompt": "Extreme close-up. A yellowed handwritten note held between two fingers, faded blue ballpoint handwriting clearly visible on the worn paper, soft warm morning light, very shallow focus with a dreamy bokeh background.",
+      "has_protagonist": false
+    },
+    {
+      "beat_id": 7,
+      "camera": "zoom_in",
+      "shot_type": "medium",
+      "narration": "下午的會議上,她把提案裡最誠實的部分講了出來。散會後,組長在她桌上放了一杯咖啡,那台老機器煮的。她把辭職信也塞進了機身側板,壓在那張紙條旁邊。",
+      "image_prompt": "Medium shot, eye-level. She sits at her office desk with a fresh steaming cup of coffee just placed in front of her, a faint genuine relieved smile forming, eyes bright. Warm golden late-afternoon light streams through the office window behind her, hopeful and calm atmosphere.",
+      "has_protagonist": true
+    }
+  ]
+}
