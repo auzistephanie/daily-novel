@@ -2,6 +2,8 @@
 
 > 唔會自動讀入每次對話 context，需要時先 `read_file`。
 
+- **2026-07-25**：**散喺 repo 嘅 `.bak-*` 備份推咗上 GitHub → 搬入 `_to_delete/`**——本 repo `.gitignore` 已經有 `_to_delete/`，但備份檔冇搬入去、留咗喺原位，所以 `github_push.py` 照當普通檔上傳；GitHub Git Trees API 核實 remote `main` 實際有：`CLAUDE.md.bak-20260718`（repo 根）。修法：`mv` 入 `_to_delete/`（跟全局規則「清理一律 mv 去該 project 根目錄 `_to_delete/`」），push 後 `github_push.py` 嘅 `deletions` 邏輯自動由 remote 樹刪走，14 日後由 `stephanie-personal/scripts/clean_to_delete.sh` 真刪。背景：同日先修咗 6 個 repo `.gitignore` 漏咗 `_to_delete/`，跟手全 repo 掃多次，發現呢批係另一種漏法——**回收筒 ignore 咗，但檔案根本冇入過回收筒**。⚠️ 只由 HEAD 移除，舊 commit 歷史仍然有；已 grep 過冇 token／secret 值。
+
 - **2026-07-25**：DeepSeek 官方 2026-07-24 停用舊 model 名 `deepseek-chat`/`deepseek-reasoner`（迎代 `deepseek-v4-flash`/`deepseek-v4-pro`）——`novel-web/src/lib/deepseek.ts` 跟住換做 `model: "deepseek-v4-flash"` + `thinking: { type: "disabled" }`（保持原本非thinking快速回覆行為）。已用真 Mac + 真 API key 實測同一個 request 格式：status=200、回覆正常、`reasoning_content` 為空確認 thinking 已關。⚠️ 未做：純機械式 model 名替換，未喺 novel-web 網站實際觸發一次真結局生成流程。 順手同步更新 `README.md` 舊嘅「DeepSeek-V3（deepseek-chat）」描述做 `DeepSeek（deepseek-v4-flash）`。
 
 - **2026-07-23**（第二輪）：**videoclip 首次真實生圖跑通 + 修 Mac python3.9 相容性 bug**——三個 script（`image_gen.py`／`tts_gen.py`／`assemble.py`）用咗 PEP604 `X | None` union type hint,Mac 系統 `python3` 實測係 3.9.6(唔支援,3.10+先得),行 `image_gen.py` 即刻 `TypeError`;修法係三個檔案頂部加 `from __future__ import annotations`(annotation 延遲評估,3.9 都得,唔使逼 Stephanie 裝新 python)。修完後揀第二篇故事(《離婚協議簽完那晚，他訂的還是我愛吃的那家酸菜魚》,林淮溪,追妻火葬場,story_id `631923fb`)寫 storyboard(7 beat,新 protagonist_lock 涵蓋男女主角兩個人嘅描述,seed 51204),`image_gen.py` 實跑 7 beat 全部用真・CF flux-2(冇 fallback sana),已逐張目視驗證:兩位主角喺 7 張圖入面樣貌/衣著高度一致,質感、光線、情緒運鏡都達標,證明 protagonist_lock + 固定 seed 呢個免費方案work。⚠️ tts_gen.py／assemble.py 呢兩步今次未跑,下次繼續。
