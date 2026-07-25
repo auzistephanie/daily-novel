@@ -59,7 +59,7 @@ daily-novel/
 | 每月生成次數 | ~15 次 |
 | 月費 | ~HK$4 |
 
-使用 DeepSeek-V3（deepseek-chat）。
+使用 DeepSeek（deepseek-v4-flash）。
 
 ## 自動化設置
 
