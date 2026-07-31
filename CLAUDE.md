@@ -19,7 +19,7 @@ Push（`github_push.py` 永不 git CLI・HTTPS・一次 run 一 commit）・寫�
 
 ## 推送本 repo
 
-> 正本 → ⚙️ Standards §S1。本 repo：`scripts/github_push.py`。novel-web 有自己嘅 `scripts/github_push.py`（PAT 喺 `novel-web/.env`；`push-novel-web.sh`／plain git CLI 已停用）；兩者 2026-07-25 由 root 搬入 `scripts/` 統一；⚠️ 雲端 sandbox 對 novel-web 跑 API push 會撞 403（session 未 allowlist）→ `device_commit_files` 交返本機跑，詳見 `novel-web/CLAUDE.md`「開發須知」。
+> 正本 → ⚙️ Standards §S1。本 repo：`scripts/github_push.py`。novel-web 有自己嘅 `scripts/github_push.py`（PAT 喺 `novel-web/.env`；`push-novel-web.sh`／plain git CLI 已停用）；兩者 2026-07-25 由 root 搬入 `scripts/` 統一。**推 novel-web 要 `cd` 入去單獨推一次**（推 daily-novel 唔會連佢一齊推）。⚠️ Cowork **container** 對 novel-web 跑 API push 仍然撞 403，但**經 desktop-commander 喺真 Mac 跑就得**（2026-07-31 實測 `c319031`）——唔使再交返本機，詳見 `novel-web/CLAUDE.md`「開發須知」。
 
 ## ✅ 完成前檢查（本 repo 專屬 DoD；通用四格 → 02-JUDGMENT §R2）
 
