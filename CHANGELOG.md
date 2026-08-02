@@ -1,5 +1,7 @@
 # 改版歷史
 
+- 2026-08-01：**novel_endings 撞 `duplicate key ... novel_endings_user_story_uidx` 儲存失敗 → drop 舊 unique index** — 讀者揀第二個分支結局時報「儲存失敗」。查因：`novel_endings_user_story_uidx`＝`UNIQUE(user_id, story_id)`，但 2026-07-11 起 `endings.ts` 已改做「同一故事可以生成多個結局，insert 唔 upsert」，呢個 unique index 係改設計嗰陣冇跟手拆走嘅殘留，全 repo grep 冇代碼依賴。Supabase migration `drop_stale_novel_endings_user_story_uidx` drop 咗（`idx_novel_endings_user`／兩條 FK 唔變）。已用真 user_id/story_id insert 第二行測試驗證通過，再刪走測試資料。純 DB 改動，代碼／novel-web repo 冇變，唔使 push。
+
 - 2026-08-01（承 07-31 制度複檢）：**`scripts/github_push.py` 修靜默故障** — 舊版 `_PUSH_STATE_DIR` 用 `os.path.dirname(REPO)` 當 stephanie-personal 係隔籬 folder；04-MAINTENANCE §6 將 5 個 repo 搬出 Drive Mirror 後假設崩咗，`makedirs` 靜靜咁喺 `~/Desktop/dev`、`~/dev`、`daily-novel/` 開咗 3 個假 stephanie-personal，concurrent-push 偵測對 6 個 repo 死咗都冇人知（真 state 檔停留喺 7/26–7/30）。改為 `STEPHANIE_PERSONAL_DIR` 環境變數 → Drive 正本絕對路徑 → legacy sibling 三段 resolve，搵唔到就**唔寫兼出聲**（S5「死咗邊個會知」）。12 份 script 一齊改，py_compile 全過，sales-trainer 實跑驗證真 state 有更新。假 folder 已收入 `_to_delete/`。
 
 - 2026-07-31：push 記錄事實更正 — 「novel-web 雲端 API push 403 → `device_commit_files` 交返本機」改為「container 仍 403，但經 desktop-commander 喺真 Mac 跑就得（實測 `c319031`）」。同日 06-STANDARDS 例外表同步刪走嗰條例外。順帶補明「推 novel-web 要 cd 入去單獨推一次」。改咗 `CLAUDE.md` 同 `novel-web/CLAUDE.md`。
