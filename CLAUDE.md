@@ -11,7 +11,7 @@ Push（`github_push.py` 永不 git CLI・HTTPS・一次 run 一 commit）・寫�
 
 ## 產品出口 = novel-web
 
-**novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。本機位置仍係 `daily-novel/novel-web/`，未搬去獨立 `~/novel-web/`——搬機重組暫緩，搬咗先改）：Next.js + Supabase login + 故事牆 + 個人化結局，由 Cowork scheduled task（`novel-story-generator` 12:30/16:30）直接用 Claude 生成內容寫入 Supabase（結局改由讀者主動揀分支即時生成，`novel-ending-generator` task 已於 2026-07-10 刪除，詳見 `novel-web/CLAUDE.md`）。新功能／新故事出口去 novel-web 自己嘅 `CLAUDE.md`。
+**novel-web**（獨立 repo `github.com/auzistephanie/novel-web`，唔屬於呢個 repo 嘅 git 版本控制，`.gitignore` 已排除。本機位置仍係 `daily-novel/novel-web/`，未搬去獨立 `~/novel-web/`——搬機重組暫緩，搬咗先改）：Next.js + Supabase login + 故事牆 + 個人化結局，由 **Vercel Cron**（`novel-story-generator`，每日 HKT 12:30 一次，1 serial+1 short，2026-08-01 起唔再靠 Cowork scheduled task）call DeepSeek 生成內容寫入 Supabase（結局改由讀者主動揀分支即時生成，`novel-ending-generator` task 已於 2026-07-10 刪除，詳見 `novel-web/CLAUDE.md`）。新功能／新故事出口去 novel-web 自己嘅 `CLAUDE.md`。
 
 ## 舊 Telegram bot（2026-07-11 已移除）
 
