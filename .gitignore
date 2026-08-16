@@ -27,6 +27,12 @@ __pycache__/
 *.pyo
 .DS_Store
 
+# Build artifacts（本機生成，Drive Mirror 佔位，永唔推 GitHub）
+# node_modules（462MB）、.next（17MB）已 2026-08-16 清走；開發前要 npm install
+# 詳見 novel-web/README.md
+node_modules/
+.next/
+
 # novel-web 係獨立 project（自己 git repo + 自己 GitHub repo），唔屬於 daily-novel 版本控制
 novel-web/
 
