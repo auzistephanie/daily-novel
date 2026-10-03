@@ -546,7 +546,7 @@ def do_check(owner, repo, token, base):
     if last and last != base_sha:
         print(f"   ⚠️  遠端喺你上次見到之後變咗（{last[:7]} → {base_sha[:7]}）"
               f"— 另一部機／session 推過嘢。")
-        print("      Google Drive sync 完未？未 sync 完就改嘢，你會覆蓋人哋。")
+        print("      先將遠端新檔攞返落本機，再改嘢，唔係你會覆蓋人哋。")
     elif last:
         print(f"   ✅ 遠端同 {_HOST} 上次同步嘅一樣（{last[:7]}）")
     else:
@@ -579,8 +579,8 @@ def do_check(owner, repo, token, base):
         if len(missing) > 15:
             print(f"      … 另外 {len(missing) - 15} 個")
         if len(missing) > DELETION_LIMIT:
-            print(f"      ⚠️  超過 {DELETION_LIMIT} 個 — 好大機會係 Drive 未 sync 完，"
-                  f"唔好急住推，等 Drive 追返先。")
+            print(f"      ⚠️  超過 {DELETION_LIMIT} 個 — 好大機會係另一部機／session 推咗新檔，"
+                  f"你本機未攞返落嚟；唔好急住全量推，先同步本機或者用 --files。")
     return 0
 
 
@@ -624,7 +624,7 @@ def main():
             print("   即係另一部機／另一個 session 喺你之後推過嘢，你手上份 base 係舊嘅。")
             print(f"   遠端 HEAD：{_remote_head_info(owner, repo, token, base_sha)}")
             print("   點做：先跑 `python3 scripts/github_push.py --check` 睇差異，")
-            print("        等 Google Drive sync 完，確認你唔會覆蓋人哋嘅嘢，再帶 --force 推。")
+            print("        先將遠端新檔攞返落本機，確認你唔會覆蓋人哋嘅嘢，再帶 --force 推。")
             raise SystemExit(2)
 
     all_tracked = working_files()
@@ -657,8 +657,8 @@ def main():
             print(f"     · {p}")
         if len(deletions) > 20:
             print(f"     … 另外 {len(deletions) - 20} 個")
-        print("   最常見原因：Google Drive 未 sync 完，你部機仲未見到另一部機新增嘅檔。")
-        print("   點做：等 Drive sync 完再跑一次；真係要刪就帶 --allow-deletions。")
+        print("   最常見原因：另一部機／session 推咗新檔，你本機未攞返落嚟。")
+        print("   點做：先同步本機再跑一次，或者用 --files 淨推指定檔；真係要刪就帶 --allow-deletions。")
         raise SystemExit(3)
 
     # 邊啲檔真係要上（純本機計算，零 API 寫入）——閘 3 要喺任何寫入之前睇呢批。
